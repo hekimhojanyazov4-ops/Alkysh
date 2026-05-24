@@ -1,0 +1,226 @@
+{% extends 'base_admin.html' %}
+{% load custom_filters %}
+{% block title %}Product Inventory - Admin Portal{% endblock %}
+{% block header_title %}Global Inventory{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- ... all the existing HTML (search, form, table, pagination) stays exactly the same ... -->
+    <!-- I'm copying the whole thing for completeness, but the only change is at the bottom -->
+    
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Platform Products</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Monitor and manage every listing on the marketplace.</p>
+        </div>
+        <a href="{% url 'admin_product_add' %}" class="bg-lux-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-lux-700 transition-colors shadow-lg flex items-center gap-2">
+            <i class="bi bi-plus-lg"></i> Add Product
+        </a>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 reveal">
+        <form method="get" class="flex flex-wrap items-center gap-3">
+            <div class="relative">
+                <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search name or seller..." 
+                       class="pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-lux-400 focus:outline-none dark:text-white transition-colors w-64">
+                <div class="absolute left-3 top-2.5 text-gray-400">
+                    <i class="bi bi-search text-sm"></i>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-1">
+                <select name="category" onchange="this.form.submit()" class="bg-transparent text-sm border-none focus:ring-0 dark:text-gray-200 px-3 cursor-pointer">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if selected_category|stringformat:"s" == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-1">
+                <select name="seller" onchange="this.form.submit()" class="bg-transparent text-sm border-none focus:ring-0 dark:text-gray-200 px-3 cursor-pointer">
+                    <option value="">All Sellers</option>
+                    {% for seller in sellers %}
+                        <option value="{{ seller.id }}" {% if selected_seller|stringformat:"s" == seller.id|stringformat:"s" %}selected{% endif %}>{{ seller.fullname }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-1">
+                <select name="brand" onchange="this.form.submit()" class="bg-transparent text-sm border-none focus:ring-0 dark:text-gray-200 px-3 cursor-pointer">
+                    <option value="">All Brands</option>
+                    {% for brand in brands %}
+                        <option value="{{ brand.id }}" {% if selected_brand|stringformat:"s" == brand.id|stringformat:"s" %}selected{% endif %}>{{ brand.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-1">
+                <select name="status" onchange="this.form.submit()" class="bg-transparent text-sm border-none focus:ring-0 dark:text-gray-200 px-3 cursor-pointer">
+                    <option value="">All Statuses</option>
+                    <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="hidden" {% if selected_status == 'hidden' %}selected{% endif %}>Hidden</option>
+                </select>
+            </div>
+
+            <button type="submit" class="bg-lux-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-lux-700 transition-colors shadow-sm">
+                Filter
+            </button>
+
+            {% if request.GET.q %}
+                <a href="{% url 'admin_product_list' %}" class="text-xs text-gray-500 hover:text-lux-600">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Bulk Action Form -->
+    <form method="post" action="{% url 'admin_product_bulk_action' %}" id="bulk-action-form">
+        {% csrf_token %}
+        <!-- Bulk Action Toolbar (always visible) -->
+        <div class="flex items-center justify-between px-6 py-3 mb-4 border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl">
+            <div class="flex items-center gap-3">
+                <select name="action" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white px-3 py-2 focus:ring-lux-500 focus:border-lux-500">
+                    <option value="">-- Bulk Action --</option>
+                    <option value="activate">Make Active</option>
+                    <option value="hide">Make Hidden</option>
+                    <option value="delete">Hard Delete</option>
+                </select>
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-lux-600 text-white text-sm font-medium rounded-lg hover:bg-lux-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lux-500 transition-colors">
+                    <i class="bi bi-check-lg mr-1.5"></i> Apply
+                </button>
+            </div>
+            <span class="text-xs text-gray-500 dark:text-gray-400" id="selected-count">0 selected</span>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux overflow-hidden border border-gray-100 dark:border-gray-700 reveal">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+                        <tr>
+                            <th class="px-6 py-4 w-10">
+                                <input type="checkbox" id="select-all" class="rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
+                            </th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'name' %}" class="hover:text-gray-700 dark:hover:text-white">Product {% if request.GET.order_by == 'name' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-name' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'seller__fullname' %}" class="hover:text-gray-700 dark:hover:text-white">Seller {% if request.GET.order_by == 'seller__fullname' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-seller__fullname' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'category__name' %}" class="hover:text-gray-700 dark:hover:text-white">Category {% if request.GET.order_by == 'category__name' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-category__name' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'price' %}" class="hover:text-gray-700 dark:hover:text-white">Price {% if request.GET.order_by == 'price' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-price' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'available' %}" class="hover:text-gray-700 dark:hover:text-white">Status {% if request.GET.order_by == 'available' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-available' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        {% for product in products %}
+                        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                            <td class="px-6 py-4">
+                                <input type="checkbox" name="ids" value="{{ product.id }}" class="bulk-checkbox rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-3">
+                                    <img src="{{ product.images.first.image.url|default:'https://via.placeholder.com/40' }}" class="w-10 h-10 rounded-lg object-cover">
+                                    <div class="font-medium text-gray-900 dark:text-white truncate max-w-[150px]">{{ product.name }}</div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                {{ product.seller.fullname }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ product.category.name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+                                ${{ product.price }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase {% if product.available %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
+                                    {{ product.available|yesno:"Active,Hidden" }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right space-x-3">
+                                <a href="{% url 'admin_product_edit' product.uuid %}" class="text-blue-500 hover:text-blue-600 font-semibold text-xs uppercase">Edit</a>
+                                <a href="{% url 'admin_product_toggle' product.uuid %}" class="text-lux-600 hover:text-lux-700 font-semibold text-xs uppercase">{{ product.available|yesno:"Hide,Show" }}</a>
+                                <form action="{% url 'admin_product_delete' product.uuid %}" method="post" class="inline" onsubmit="return confirm('Hard delete this product?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-500 hover:text-red-600 font-semibold text-xs uppercase">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-20 text-center text-gray-500">
+                                No products found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+
+    <!-- Pagination -->
+    {% if products.has_other_pages %}
+    <div class="mt-8">
+        <nav class="flex justify-center items-center space-x-2">
+            {% if products.has_previous %}
+                <a href="?page={{ products.previous_page_number }}{% url_replace_params 'page' products.previous_page_number %}"
+                   class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                </a>
+            {% endif %}
+
+            {% for i in products.paginator.page_range %}
+                {% if products.number == i %}
+                    <span class="px-4 py-2 bg-lux-600 text-white rounded-xl font-bold shadow-md">{{ i }}</span>
+                {% elif i > products.number|add:'-3' and i < products.number|add:'3' %}
+                    <a href="?page={{ i }}{% url_replace_params 'page' i %}"
+                       class="px-4 py-2 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 font-medium">
+                        {{ i }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+
+            {% if products.has_next %}
+                <a href="?page={{ products.next_page_number }}{% url_replace_params 'page' products.next_page_number %}"
+                   class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- JavaScript moved inside content block – it will always execute now -->
+<script>
+    (function() {
+        const selectAllCheckbox = document.getElementById('select-all');
+        const checkboxes = document.querySelectorAll('.bulk-checkbox');
+        const selectedCountSpan = document.getElementById('selected-count');
+
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('.bulk-checkbox:checked').length;
+            selectedCountSpan.textContent = selected + ' selected';
+        }
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function(e) {
+                checkboxes.forEach(cb => {
+                    cb.checked = e.target.checked;
+                });
+                updateSelectedCount();
+            });
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                const allChecked = document.querySelectorAll('.bulk-checkbox:checked').length === checkboxes.length;
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = allChecked;
+                }
+                updateSelectedCount();
+            });
+        });
+
+        // Initial count
+        updateSelectedCount();
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,322 @@
+{% extends 'base_admin.html' %}
+{% load custom_filters %}
+{% block title %}Seller Management{% endblock %}
+{% block header_title %}Seller Approvals{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-12">
+    <h1 class="font-display text-4xl font-bold text-gray-900 dark:text-white mb-10 reveal">Seller Management</h1>
+
+    <!-- Search Filter -->
+    <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 reveal">
+        <form method="get" class="flex items-center gap-3">
+            <div class="relative">
+                <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search by name or email..." 
+                       class="pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-lux-400 focus:outline-none dark:text-white transition-colors w-64 md:w-80">
+                <div class="absolute left-3 top-2.5 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                </div>
+            </div>
+            <button type="submit" class="bg-lux-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-lux-700 transition-colors shadow-sm">
+                Search
+            </button>
+            {% if request.GET.q %}
+                <a href="{% url 'admin_seller_management' %}" class="text-xs text-gray-500 hover:text-lux-600 font-medium px-2">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="space-y-12">
+        <!-- Pending Sellers -->
+        <section>
+            <h3 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-3">
+                Pending Applications
+                <span class="bg-lux-100 text-lux-700 text-xs px-2 py-1 rounded-full">{{ pending_sellers.paginator.count }}</span>
+            </h3>
+
+            <!-- Pending Bulk Action Form -->
+            <form method="post" action="{% url 'admin_seller_bulk_action' %}" id="pending-bulk-form">
+                {% csrf_token %}
+                <!-- Pending Bulk Toolbar -->
+                <div class="flex items-center justify-between px-6 py-3 mb-4 border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl">
+                    <div class="flex items-center gap-3">
+                        <select name="action" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white px-3 py-2 focus:ring-lux-500 focus:border-lux-500">
+                            <option value="">-- Bulk Action --</option>
+                            <option value="approve">Approve Selected</option>
+                            <option value="reject">Deactivate / Reject</option>
+                            <option value="delete">Delete Sellers</option>
+                        </select>
+                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-lux-600 text-white text-sm font-medium rounded-lg hover:bg-lux-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lux-500 transition-colors">
+                            <i class="bi bi-check-lg mr-1.5"></i> Apply
+                        </button>
+                    </div>
+                    <span class="text-xs text-gray-500 dark:text-gray-400" id="pending-selected-count">0 selected</span>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux overflow-hidden border border-gray-100 dark:border-gray-700 reveal">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+                                    <th class="px-6 py-4 w-10">
+                                        <input type="checkbox" id="pending-select-all" class="rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
+                                    </th>
+                                    <th class="px-6 py-4 font-semibold"><a href="{% url_replace 'order_by' 'fullname' %}" class="hover:text-gray-700 dark:hover:text-white">Name {% if request.GET.order_by == 'fullname' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-fullname' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                                    <th class="px-6 py-4 font-semibold"><a href="{% url_replace 'order_by' 'email' %}" class="hover:text-gray-700 dark:hover:text-white">Email {% if request.GET.order_by == 'email' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-email' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                                    <th class="px-6 py-4 font-semibold">Document</th>
+                                    <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                {% for seller in pending_sellers %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <input type="checkbox" name="ids" value="{{ seller.id }}" class="pending-checkbox rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
+                                    </td>
+                                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ seller.fullname }}</td>
+                                    <td class="px-6 py-4 text-gray-600 dark:text-gray-400">{{ seller.email }}</td>
+                                    <td class="px-6 py-4">
+                                        {% if seller.verification_document %}
+                                            <a href="{{ seller.verification_document.url }}" target="_blank" class="text-lux-600 hover:text-lux-700 inline-flex items-center gap-1 font-medium text-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                                </svg>
+                                                View Doc
+                                            </a>
+                                        {% else %}
+                                            <span class="text-gray-400 italic text-sm">None</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 text-right space-x-3">
+                                        <form action="{% url 'approve_seller' seller.id %}" method="post" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-green-600 hover:text-green-700 font-semibold text-sm">Approve</button>
+                                        </form>
+                                        <form action="{% url 'reject_seller' seller.id %}" method="post" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-red-500 hover:text-red-600 font-semibold text-sm" onclick="return confirm('Reject this seller?')">Reject</button>
+                                        </form>
+                                        <!-- Password Reset Link -->
+                                        <a href="{% url 'admin_reset_password' seller.id %}" 
+                                           class="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-300 transition-colors">
+                                            <i class="bi bi-key mr-1"></i> Reset Password
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="px-6 py-10 text-center text-gray-500 italic">No pending applications.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Pagination for Pending Sellers -->
+            <div class="mt-8">
+                <nav class="flex justify-center items-center space-x-2">
+                    {% if pending_sellers.has_previous %}
+                        <a href="?pending_page={{ pending_sellers.previous_page_number }}{% url_replace_params 'pending_page' pending_sellers.previous_page_number %}"
+                           class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                        </a>
+                    {% endif %}
+
+                    {% for i in pending_sellers.paginator.page_range %}
+                        {% if pending_sellers.number == i %}
+                            <span class="px-4 py-2 bg-lux-600 text-white rounded-xl font-bold shadow-md">{{ i }}</span>
+                        {% elif i > pending_sellers.number|add:'-3' and i < pending_sellers.number|add:'3' %}
+                            <a href="?pending_page={{ i }}{% url_replace_params 'pending_page' i %}"
+                               class="px-4 py-2 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 font-medium">
+                                {{ i }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if pending_sellers.has_next %}
+                        <a href="?pending_page={{ pending_sellers.next_page_number }}{% url_replace_params 'pending_page' pending_sellers.next_page_number %}"
+                           class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </section>
+
+        <!-- Approved Sellers -->
+        <section>
+            <h3 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Active Sellers</h3>
+
+            <!-- Approved Bulk Action Form -->
+            <form method="post" action="{% url 'admin_seller_bulk_action' %}" id="approved-bulk-form">
+                {% csrf_token %}
+                <!-- Approved Bulk Toolbar -->
+                <div class="flex items-center justify-between px-6 py-3 mb-4 border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl">
+                    <div class="flex items-center gap-3">
+                        <select name="action" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white px-3 py-2 focus:ring-lux-500 focus:border-lux-500">
+                            <option value="">-- Bulk Action --</option>
+                            <option value="reject">Deactivate Accounts</option>
+                            <option value="delete">Delete Sellers</option>
+                        </select>
+                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-lux-600 text-white text-sm font-medium rounded-lg hover:bg-lux-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lux-500 transition-colors">
+                            <i class="bi bi-check-lg mr-1.5"></i> Apply
+                        </button>
+                    </div>
+                    <span class="text-xs text-gray-500 dark:text-gray-400" id="approved-selected-count">0 selected</span>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux overflow-hidden border border-gray-100 dark:border-gray-700 reveal">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+                                <tr>
+                                    <th class="px-6 py-4 w-10">
+                                        <input type="checkbox" id="approved-select-all" class="rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
+                                    </th>
+                                    <th class="px-6 py-4 font-semibold">Name</th>
+                                    <th class="px-6 py-4 font-semibold">Email</th>
+                                    <th class="px-6 py-4 font-semibold">Document</th>
+                                    <th class="px-6 py-4 font-semibold text-right">Status / Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                {% for seller in approved_sellers %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <input type="checkbox" name="ids" value="{{ seller.id }}" class="approved-checkbox rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
+                                    </td>
+                                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ seller.fullname }}</td>
+                                    <td class="px-6 py-4 text-gray-600 dark:text-gray-400">{{ seller.email }}</td>
+                                    <td class="px-6 py-4">
+                                        {% if seller.verification_document %}
+                                            <a href="{{ seller.verification_document.url }}" target="_blank" class="text-lux-600 hover:text-lux-700 inline-flex items-center gap-1 font-medium text-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                                </svg>
+                                                View
+                                            </a>
+                                        {% else %}
+                                            <span class="text-gray-400 italic text-sm">None</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 text-right space-x-3">
+                                        <span class="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-md text-xs font-bold uppercase">Approved</span>
+                                        <!-- Password Reset Link -->
+                                        <a href="{% url 'admin_reset_password' seller.id %}" 
+                                           class="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-300 transition-colors">
+                                            <i class="bi bi-key mr-1"></i> Reset Password
+                                        </a>
+                                        <form action="{% url 'admin_seller_delete' seller.id %}" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this seller? This action cannot be undone and will delete all associated products and potentially affect order history.')">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-red-500 hover:text-red-600 font-semibold text-sm">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="px-6 py-10 text-center text-gray-500 italic">No approved sellers.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Pagination for Approved Sellers -->
+            <div class="mt-8">
+                <nav class="flex justify-center items-center space-x-2">
+                    {% if approved_sellers.has_previous %}
+                        <a href="?approved_page={{ approved_sellers.previous_page_number }}{% url_replace_params 'approved_page' approved_sellers.previous_page_number %}"
+                           class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                        </a>
+                    {% endif %}
+
+                    {% for i in approved_sellers.paginator.page_range %}
+                        {% if approved_sellers.number == i %}
+                            <span class="px-4 py-2 bg-lux-600 text-white rounded-xl font-bold shadow-md">{{ i }}</span>
+                        {% elif i > approved_sellers.number|add:'-3' and i < approved_sellers.number|add:'3' %}
+                            <a href="?approved_page={{ i }}{% url_replace_params 'approved_page' i %}"
+                               class="px-4 py-2 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 font-medium">
+                                {{ i }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if approved_sellers.has_next %}
+                        <a href="?approved_page={{ approved_sellers.next_page_number }}{% url_replace_params 'approved_page' approved_sellers.next_page_number %}"
+                           class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Pending Bulk Selection
+    (function() {
+        const selectAll = document.getElementById('pending-select-all');
+        const checkboxes = document.querySelectorAll('.pending-checkbox');
+        const countSpan = document.getElementById('pending-selected-count');
+
+        function updateCount() {
+            const selected = document.querySelectorAll('.pending-checkbox:checked').length;
+            countSpan.textContent = selected + ' selected';
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function(e) {
+                checkboxes.forEach(cb => cb.checked = e.target.checked);
+                updateCount();
+            });
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                if (selectAll) {
+                    selectAll.checked = document.querySelectorAll('.pending-checkbox:checked').length === checkboxes.length;
+                }
+                updateCount();
+            });
+        });
+
+        updateCount();
+    })();
+
+    // Approved Bulk Selection
+    (function() {
+        const selectAll = document.getElementById('approved-select-all');
+        const checkboxes = document.querySelectorAll('.approved-checkbox');
+        const countSpan = document.getElementById('approved-selected-count');
+
+        function updateCount() {
+            const selected = document.querySelectorAll('.approved-checkbox:checked').length;
+            countSpan.textContent = selected + ' selected';
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function(e) {
+                checkboxes.forEach(cb => cb.checked = e.target.checked);
+                updateCount();
+            });
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                if (selectAll) {
+                    selectAll.checked = document.querySelectorAll('.approved-checkbox:checked').length === checkboxes.length;
+                }
+                updateCount();
+            });
+        });
+
+        updateCount();
+    })();
+</script>
+{% endblock %}

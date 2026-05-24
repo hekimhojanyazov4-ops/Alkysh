@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}My Orders{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-12">
+    <h2 class="font-display text-4xl font-bold text-gray-800 dark:text-white mb-10">Order History</h2>
+
+    <!-- Search Bar -->
+    <div class="mb-8 reveal">
+        <form method="get" class="max-w-md">
+            <div class="relative">
+                <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by Order ID or Product..." 
+                       class="w-full pl-10 pr-24 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-lux-400 focus:outline-none dark:text-white transition-colors shadow-sm">
+                <div class="absolute left-3 top-3.5 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                </div>
+                <button type="submit" class="absolute right-2 top-2 bg-lux-600 text-white px-4 py-1.5 rounded-xl text-sm font-semibold hover:bg-lux-700 transition-colors">
+                    Search
+                </button>
+            </div>
+            {% if request.GET.q %}
+                <a href="{% url 'order_list' %}" class="inline-block mt-2 text-sm text-gray-500 hover:text-lux-600 transition-colors">Clear search results</a>
+            {% endif %}
+        </form>
+    </div>
+
+    {% if orders %}         
+        <div class="space-y-6">
+            {% for order in orders %}
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lux p-6 hover-scale reveal">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ order.created_at|date:"M d, Y" }}</p>
+                        <h4 class="text-lg font-semibold dark:text-white">#{{ order.display_id|default:order.public_id|truncatechars:12 }}</h4>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-sm font-medium 
+                        {% if order.status == 'DELIVERED' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+                        {% elif order.status == 'CANCELLED' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+                        {% elif order.status == 'SHIPPED' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+                        {% else %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400{% endif %}">
+                        {{ order.get_status_display }}
+                    </span>
+                    <div class="text-right">
+                        <span class="text-2xl font-bold text-gray-800 dark:text-gray-100">${{ order.total_price }}</span>
+                    </div>
+                    <a href="{% url 'order_detail' order.display_id|default:order.public_id %}" class="bg-gray-100 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 px-4 py-2 rounded-lg text-sm transition-colors">View</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-20 text-gray-500 dark:text-gray-400">No orders yet.</div>
+    {% endif %}
+</div>
+{% endblock %}

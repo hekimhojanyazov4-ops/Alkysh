@@ -1,0 +1,119 @@
+{% extends 'base_admin.html' %}
+{% block title %}Category Management{% endblock %}
+{% block header_title %}Catalog Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Categories</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Organize your catalog with logical groupings.</p>
+        </div>
+        <a href="{% url 'admin_category_add' %}" class="bg-lux-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-lux-700 transition-colors shadow-lg flex items-center gap-2">
+            <i class="bi bi-plus-lg"></i> Add Category
+        </a>
+    </div>
+
+    <!-- Bulk Action Form -->
+    <form method="post" action="{% url 'admin_category_bulk_action' %}" id="bulk-action-form">
+        {% csrf_token %}
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux overflow-hidden border border-gray-100 dark:border-gray-700 reveal">
+            <!-- Bulk Action Toolbar -->
+            <div class="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+                <div class="flex items-center gap-3">
+                    <select name="action" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white px-3 py-2 focus:ring-lux-500 focus:border-lux-500">
+                        <option value="">-- Bulk Action --</option>
+                        <option value="delete">Delete Selected</option>
+                    </select>
+                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-lux-600 text-white text-sm font-medium rounded-lg hover:bg-lux-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lux-500 transition-colors" onclick="return confirm('Delete all selected categories?')">
+                        <i class="bi bi-check-lg mr-1.5"></i> Apply
+                    </button>
+                </div>
+                <span class="text-xs text-gray-500 dark:text-gray-400" id="selected-count">0 selected</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+                        <tr>
+                            <th class="px-6 py-4 w-10">
+                                <input type="checkbox" id="select-all" class="rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
+                            </th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Slug</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Description</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        {% for category in categories %}
+                        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <input type="checkbox" name="ids" value="{{ category.id }}" class="bulk-checkbox rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-lux-100 dark:bg-lux-900/30 flex items-center justify-center text-lux-600">
+                                        <i class="bi {{ category.icon|default:'bi-grid' }} text-xl"></i>
+                                    </div>
+                                    <div class="font-medium text-gray-900 dark:text-white">{{ category.name }}</div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 font-mono">
+                                {{ category.slug }}
+                            </td>
+                            <td class="px-6 py-4">
+                                <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-1 max-w-xs">{{ category.description|default:"---" }}</p>
+                            </td>
+                            <td class="px-6 py-4 text-right space-x-3">
+                                <a href="{% url 'admin_category_edit' category.id %}" class="text-blue-500 hover:text-blue-600 font-semibold text-sm">Edit</a>
+                                <form action="{% url 'admin_category_delete' category.id %}" method="post" class="inline" onsubmit="return confirm('Delete this category? This might affect products linked to it.')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-500 hover:text-red-600 font-semibold text-sm">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-20 text-center text-gray-500 dark:text-gray-400">
+                                No categories found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- JavaScript for Bulk Selection -->
+<script>
+    const selectAllCheckbox = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.bulk-checkbox');
+    const selectedCountSpan = document.getElementById('selected-count');
+
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('.bulk-checkbox:checked').length;
+        selectedCountSpan.textContent = selected + ' selected';
+    }
+
+    selectAllCheckbox.addEventListener('change', function(e) {
+        checkboxes.forEach(cb => {
+            cb.checked = e.target.checked;
+        });
+        updateSelectedCount();
+    });
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const allChecked = document.querySelectorAll('.bulk-checkbox:checked').length === checkboxes.length;
+            selectAllCheckbox.checked = allChecked;
+            updateSelectedCount();
+        });
+    });
+
+    // Initial count
+    updateSelectedCount();
+</script>
+{% endblock %}

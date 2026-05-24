@@ -1,0 +1,130 @@
+{% extends 'base_seller.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h2 class="font-display text-4xl font-bold text-gray-800 dark:text-white mb-8">{{ title }}</h2>
+    
+    <form method="post" enctype="multipart/form-data" class="space-y-8" novalidate>
+        {% csrf_token %}
+
+        {# Main form non-field errors #}
+        {% if form.non_field_errors %}
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                {% for error in form.non_field_errors %}
+                    <p class="text-red-600 dark:text-red-400 text-sm">{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux p-8 border border-gray-100 dark:border-gray-700 reveal">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {% for field in form %}
+                <div class="{% if field.name == 'description' %}md:col-span-2{% endif %}">
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {{ field.label }}
+                        {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">{{ field.help_text }}</p>
+                    {% endif %}
+                    {% if field.errors %}
+                        <div class="text-red-500 dark:text-red-400 text-xs mt-1">
+                            {% for error in field.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Image Management -->
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux p-8 border border-gray-100 dark:border-gray-700 reveal delay-100">
+            <h3 class="text-lg font-semibold mb-6 dark:text-white">Product Images</h3>
+            
+            {{ formset.management_form }}
+
+            {# Formset non‑form errors #}
+            {% if formset.non_form_errors %}
+                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-4">
+                    {% for error in formset.non_form_errors %}
+                        <p class="text-red-600 dark:text-red-400 text-sm">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {% for image_form in formset %}
+                <div class="p-4 border border-gray-100 dark:border-gray-700 rounded-2xl">
+                    {# Hidden fields (id, etc.) #}
+                    {% for hidden in image_form.hidden_fields %}
+                        {{ hidden }}
+                    {% endfor %}
+
+                    <!-- Custom styled file input -->
+                    <div class="flex flex-col gap-2">
+                        <div class="flex items-center gap-3">
+                            <label for="{{ image_form.image.id_for_label }}"
+                                   class="cursor-pointer inline-flex items-center px-4 py-2 bg-lux-50 dark:bg-gray-700 text-lux-700 dark:text-gray-200 rounded-lg text-sm font-medium border border-lux-200 dark:border-gray-600 hover:bg-lux-100 dark:hover:bg-gray-600 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                                </svg>
+                                Choose Image
+                            </label>
+                            <span id="file-name-{{ forloop.counter0 }}" class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
+                                {% if image_form.instance.pk %}Current image selected{% else %}No file chosen{% endif %}
+                            </span>
+                            {# The actual file input is hidden via widget attrs (see note below) #}
+                            {{ image_form.image }}
+                        </div>
+                        {% if image_form.image.errors %}
+                            <div class="text-red-500 text-xs">
+                                {% for error in image_form.image.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if image_form.instance.pk %}
+                        <div class="mt-3 flex items-center gap-2">
+                            <img src="{{ image_form.instance.image.url }}" alt="Current image" class="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-600">
+                            <label for="{{ image_form.DELETE.id_for_label }}" class="text-xs text-red-500 flex items-center cursor-pointer">
+                                {{ image_form.DELETE }}
+                                <span class="ml-1">Delete?</span>
+                            </label>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4">
+            {% if request.user.role == 'ADMIN' %}
+                <a href="{% url 'admin_product_list' %}" class="px-8 py-3 text-gray-500 font-medium hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors">Cancel</a>
+            {% else %}
+                <a href="{% url 'seller_product_list' %}" class="px-8 py-3 text-gray-500 font-medium hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors">Cancel</a>
+            {% endif %}
+            <button type="submit"
+                    class="bg-lux-600 text-white px-10 py-3 rounded-xl font-semibold hover:bg-lux-700 transition-colors shadow-lg focus:outline-none focus:ring-2 focus:ring-lux-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                Save Product
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update file name label when a file is chosen
+    document.querySelectorAll('input[type="file"]').forEach((input, index) => {
+        input.addEventListener('change', function() {
+            const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
+            document.getElementById('file-name-' + index).textContent = fileName;
+        });
+    });
+</script>
+{% endblock %}

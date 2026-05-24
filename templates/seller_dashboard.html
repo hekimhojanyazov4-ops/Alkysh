@@ -1,0 +1,275 @@
+{% extends 'base_seller.html' %}
+{% block title %}Seller Dashboard{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+{% endblock %}
+
+{% block content %}
+{% if pending_approval %}
+<div class="max-w-4xl mx-auto text-center">
+    <div class="bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-lux border border-gray-100 dark:border-gray-700 reveal">
+        <!-- Progress Stepper -->
+        <div class="relative flex items-center justify-between mb-24 max-w-2xl mx-auto px-4">
+            <!-- Line Background -->
+            <div class="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-1 bg-gray-100 dark:bg-gray-700 z-0 rounded-full"></div>
+            <!-- Active Line -->
+            <div class="absolute left-4 top-1/2 -translate-y-1/2 h-1 bg-lux-600 z-0 transition-all duration-1000 rounded-full" style="width: 66%;"></div>
+
+            <!-- Step 1 -->
+            <div class="relative z-10 flex flex-col items-center group">
+                <div class="w-12 h-12 rounded-full bg-lux-600 text-white flex items-center justify-center shadow-lg transform transition-transform group-hover:scale-110">
+                    <i class="bi bi-person-check text-xl"></i>
+                </div>
+                <span class="absolute top-16 whitespace-nowrap text-[10px] font-bold text-gray-900 dark:text-white uppercase tracking-widest">Registered</span>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="relative z-10 flex flex-col items-center group">
+                <div class="w-12 h-12 rounded-full {% if user.verification_document %}bg-lux-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-400{% endif %} flex items-center justify-center transform transition-transform group-hover:scale-110">
+                    {% if user.verification_document %}<i class="bi bi-file-earmark-check text-xl"></i>{% else %}<i class="bi bi-file-earmark-arrow-up text-xl"></i>{% endif %}
+                </div>
+                <span class="absolute top-16 whitespace-nowrap text-[10px] font-bold {% if user.verification_document %}text-gray-900 dark:text-white{% else %}text-gray-400{% endif %} uppercase tracking-widest">Verification</span>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="relative z-10 flex flex-col items-center group">
+                <div class="w-12 h-12 rounded-full bg-white dark:bg-gray-800 border-2 border-lux-600 text-lux-600 flex items-center justify-center shadow-lux transform transition-transform group-hover:scale-110 animate-pulse">
+                    <i class="bi bi-clock-history text-xl"></i>
+                </div>
+                <span class="absolute top-16 whitespace-nowrap text-[10px] font-bold text-lux-600 uppercase tracking-widest">In Review</span>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="relative z-10 flex flex-col items-center group">
+                <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-300 dark:text-gray-600 flex items-center justify-center transform transition-transform group-hover:scale-110">
+                    <i class="bi bi-rocket-takeoff text-xl"></i>
+                </div>
+                <span class="absolute top-16 whitespace-nowrap text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-widest">Live</span>
+            </div>
+        </div>
+        
+        <div class="space-y-4">
+            <h2 class="font-display text-4xl font-bold dark:text-white">Application Under Review</h2>
+            <p class="text-gray-600 dark:text-gray-400 text-lg max-w-lg mx-auto leading-relaxed">
+                Hello Partner! Our administrators are currently verifying your credentials. 
+                Verification typically takes <strong>24 to 48 hours</strong>. You will receive an email confirmation once your shop is live.
+            </p>
+        </div>
+
+        <a href="{% url 'home' %}" class="mt-8 inline-block bg-lux-600 text-white px-8 py-3 rounded-xl font-medium">Back to Home</a>
+    </div>
+</div>
+{% else %}
+<div class="max-w-7xl mx-auto pb-10">
+    <div class="mb-10 reveal">
+        <h2 class="font-display text-4xl font-bold text-gray-900 dark:text-white">Partner Overview</h2>
+        <p class="text-gray-500 mt-2">Welcome back, {{ user.fullname }}. Here is what's happening with your store today.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Available Revenue -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-lux border border-gray-100 dark:border-gray-700 reveal delay-100 hover-scale">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600"><i class="bi bi-currency-dollar"></i></div>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Available</span>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ total_revenue }}</p>
+            
+            <div class="mt-4">
+                {% if can_withdraw %}
+                <form action="{% url 'withdraw_funds' %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 rounded-xl transition-all shadow-md active:scale-95">
+                        WITHDRAW FUNDS
+                    </button>
+                </form>
+                {% else %}
+                <button disabled class="w-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 text-[10px] font-bold py-2 rounded-xl cursor-not-allowed">
+                    MIN. ${{ withdrawal_threshold }} REQUIRED
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Escrow Revenue -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-lux border border-gray-100 dark:border-gray-700 reveal delay-200 hover-scale">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-10 h-10 rounded-full bg-lux-100 dark:bg-lux-900/30 flex items-center justify-center text-lux-600"><i class="bi bi-clock-history"></i></div>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">In Escrow</span>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" data-countup-value="{{ escrow_revenue }}">${{ escrow_revenue }}</p>
+            <p class="text-xs text-gray-500 mt-1">Processing/Shipped</p>
+        </div>
+        <!-- Total Orders -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-lux border border-gray-100 dark:border-gray-700 reveal delay-300 hover-scale">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600"><i class="bi bi-bag-check"></i></div>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lifetime Orders</span>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" data-countup-value="{{ total_orders }}">{{ total_orders }}</p>
+            <p class="text-xs text-gray-500 mt-1">Orders processed</p>
+        </div>
+        <!-- Avg Order Value -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-lux border border-gray-100 dark:border-gray-700 reveal delay-400 hover-scale">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600"><i class="bi bi-graph-up-arrow"></i></div>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Avg Value</span>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white" data-countup-value="{{ avg_order_value|floatformat:2 }}">${{ avg_order_value|floatformat:2 }}</p>
+            <p class="text-xs text-gray-500 mt-1">Revenue per order</p>
+        </div>
+    </div>
+
+    <!-- Revenue Trend Chart -->
+    <div class="mt-12 bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lux border border-gray-100 dark:border-gray-700 reveal delay-100">
+        <h3 class="font-display text-2xl font-bold mb-6 dark:text-white">Revenue Growth (Last 30 Days)</h3>
+        <div id="sellerSalesChart" class="w-full"></div>
+    </div>
+
+    <!-- Recent Sales Table -->
+    <div class="mt-12 bg-white dark:bg-gray-800 rounded-3xl shadow-lux p-8 border border-gray-100 dark:border-gray-700 reveal delay-200">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="font-display text-2xl font-bold dark:text-white">Recent Sales</h3>
+            <a href="{% url 'order_list' %}" class="text-sm font-semibold text-lux-600 hover:underline">View All &rarr;</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
+                        <th class="pb-4 font-semibold">Date</th>
+                        <th class="pb-4 font-semibold">Order ID</th>
+                        <th class="pb-4 font-semibold">Customer</th>
+                        <th class="pb-4 font-semibold">Product</th>
+                        <th class="pb-4 font-semibold text-right">Amount</th>
+                        <th class="pb-4 font-semibold text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for sale in recent_sales %}
+                    <tr class="text-sm hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                        <td class="py-4 text-gray-500 dark:text-gray-400">{{ sale.order.created_at|date:"M d, Y" }}</td>
+                        <td class="py-4">
+                            <a href="{% url 'order_detail' sale.order.display_id %}" class="font-medium text-lux-600 hover:underline">
+                                #{{ sale.order.display_id }}
+                            </a>
+                        </td>
+                        <td class="py-4 dark:text-gray-200">{{ sale.order.customer.fullname }}</td>
+                        <td class="py-4 dark:text-gray-200">{{ sale.product.name }}</td>
+                        <td class="py-4 text-right font-bold dark:text-white">${{ sale.item_revenue|floatformat:2 }}</td>
+                        <td class="py-4 text-center">
+                            <span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase 
+                                {% if sale.order.status == 'DELIVERED' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+                                {% elif sale.order.status == 'CANCELLED' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+                                {% else %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400{% endif %}">
+                                {{ sale.order.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="py-10 text-center text-gray-500 italic">No recent sales found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top Selling Products -->
+    <div class="mt-12 bg-white dark:bg-gray-800 rounded-3xl shadow-lux p-8 text-left border border-gray-100 dark:border-gray-700 transition-all reveal delay-300">
+        <h3 class="font-display text-2xl font-bold mb-6 dark:text-white">Top Selling Products</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
+                        <th class="pb-4 font-semibold">Product Name</th>
+                        <th class="pb-4 font-semibold text-center">Units Sold</th>
+                        <th class="pb-4 font-semibold text-right">Total Revenue</th>
+                        <th class="pb-4 font-semibold text-center">Stock Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for p in top_products %}
+                    <tr class="text-sm">
+                        <td class="py-4 font-medium dark:text-gray-200">{{ p.product__name }}</td>
+                        <td class="py-4 text-center dark:text-gray-400">{{ p.units_sold }}</td>
+                        <td class="py-4 text-right font-bold dark:text-white">${{ p.revenue|floatformat:2 }}</td>
+                        <td class="py-4 text-center">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full {% if p.product__available %}bg-green-500{% else %}bg-red-500{% endif %}" title="{% if p.product__available %}In Stock{% else %}Out of Stock{% endif %}"></span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="py-10 text-center text-gray-500 italic">No sales data recorded yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const options = {
+            series: [{
+                name: 'Revenue',
+                data: {{ chart_data|safe }}
+            }],
+            chart: {
+                type: 'area',
+                height: 350,
+                toolbar: { show: false },
+                background: 'transparent'
+            },
+            colors: ['#c5a059'],
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.45,
+                    opacityTo: 0.05,
+                    stops: [20, 100]
+                }
+            },
+            stroke: { curve: 'smooth', width: 3 },
+            xaxis: {
+                categories: {{ chart_labels|safe }},
+                labels: { style: { colors: '#64748b' } }
+            },
+            yaxis: {
+                labels: {
+                    style: { colors: '#64748b' },
+                    formatter: (value) => "$" + value
+                }
+            },
+            grid: {
+                borderColor: '#e2e8f0',
+                strokeDashArray: 4
+            },
+            theme: { mode: 'light' },
+            tooltip: { theme: 'light' }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#sellerSalesChart"), options);
+        chart.render();
+
+        // Simple count-up animation for metrics
+        const countUp = (el) => {
+            const target = parseFloat(el.getAttribute('data-countup-value'));
+            const duration = 1500;
+            const start = 0;
+            const startTime = performance.now();
+            
+            const animate = (currentTime) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const current = progress * target;
+                el.textContent = el.textContent.startsWith('$') ? `$${current.toFixed(2)}` : Math.floor(current);
+                if (progress < 1) requestAnimationFrame(animate);
+            };
+            requestAnimationFrame(animate);
+        };
+        document.querySelectorAll('[data-countup-value]').forEach(countUp);
+    });
+</script>
+{% endblock %}

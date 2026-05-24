@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}My Wishlist - LuxMarket{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-12">
+    <h1 class="font-display text-3xl md:text-4xl font-bold mb-8 text-gray-900 dark:text-white">My Wishlist</h1>
+    
+    {% if favorites %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {% for fav in favorites %}
+                <div class="group bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-lux hover-scale reveal">
+                    <a href="{% url 'product_detail' fav.product.uuid %}" class="block relative aspect-[4/5] overflow-hidden">
+                        <img src="{{ fav.product.images.first.image.url|default:'https://via.placeholder.com/400x500' }}" 
+                             alt="{{ fav.product.name }}" 
+                             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                        <div class="absolute top-4 right-4">
+                            <form action="{% url 'toggle_favorite' fav.product.id %}" method="POST">
+                                {% csrf_token %}
+                                <button type="submit" class="bg-white/90 backdrop-blur p-2 rounded-full text-red-500 shadow-lg">
+                                    <i class="bi bi-heart-fill"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </a>
+                    <div class="p-6">
+                        <p class="text-xs font-bold text-lux-500 uppercase tracking-widest mb-1">{{ fav.product.brand.name }}</p>
+                        <h3 class="font-display text-lg font-bold text-gray-900 dark:text-white truncate mb-2">{{ fav.product.name }}</h3>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xl font-bold text-gray-900 dark:text-white">${{ fav.product.effective_price }}</span>
+                            <a href="{% url 'product_detail' fav.product.uuid %}" class="text-sm font-semibold text-lux-600 hover:text-lux-700">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-20 bg-white dark:bg-gray-800 rounded-3xl shadow-lux">
+            <i class="bi bi-heart text-6xl text-gray-200 mb-4 block"></i>
+            <p class="text-gray-500 dark:text-gray-400 text-lg">Your wishlist is empty.</p>
+            <a href="{% url 'home' %}" class="inline-block mt-6 bg-lux-600 text-white px-8 py-3 rounded-full font-medium">Explore Products</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

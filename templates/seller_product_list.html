@@ -1,0 +1,202 @@
+{% extends 'base_seller.html' %}
+{% block title %}My Inventory{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-10">
+        <h2 class="font-display text-4xl font-bold text-gray-800 dark:text-white">My Inventory</h2>
+        <a href="{% url 'seller_product_add' %}" class="bg-lux-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-lux-700 transition-colors shadow-lg flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 mr-2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add Product
+        </a>
+    </div>
+
+    <!-- Search and Filter Bar -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lux p-6 mb-8 border border-gray-100 dark:border-gray-700 reveal">
+        <form method="get" class="flex flex-wrap items-end gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label for="q" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Search Products</label>
+                <div class="relative">
+                    <input type="text" name="q" id="q" value="{{ request.GET.q }}" placeholder="Search by name..." 
+                           class="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none dark:text-white transition-colors">
+                    <div class="absolute left-3 top-2.5 text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="w-full sm:w-48">
+                <label for="category" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Category</label>
+                <select name="category" id="category" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none dark:text-white transition-colors">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"i" %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="w-full sm:w-48">
+                <label for="status" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Status</label>
+                <select name="status" id="status" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none dark:text-white transition-colors">
+                    <option value="">All Status</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="hidden" {% if request.GET.status == 'hidden' %}selected{% endif %}>Hidden</option>
+                </select>
+            </div>
+
+            <button type="submit" class="bg-lux-600 text-white px-6 py-2 rounded-xl font-semibold hover:bg-lux-700 transition-colors shadow-md h-[42px]">
+                Filter
+            </button>
+            
+            {% if request.GET.q or request.GET.category or request.GET.status %}
+                <a href="{% url 'seller_product_list' %}" class="text-sm text-gray-500 hover:text-lux-600 font-medium h-[42px] flex items-center px-2">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Bulk Action Form -->
+    <form method="post" action="{% url 'seller_product_bulk_action' %}" id="bulk-action-form">
+        {% csrf_token %}
+        <!-- Bulk Action Toolbar -->
+        <div class="flex items-center justify-between px-6 py-3 mb-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl">
+            <div class="flex items-center gap-3">
+                <select name="action" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white px-3 py-2 focus:ring-lux-500 focus:border-lux-500">
+                    <option value="">-- Bulk Action --</option>
+                    <option value="make_active">Mark as Active</option>
+                    <option value="make_hidden">Mark as Hidden</option>
+                    <option value="delete">Delete Selected</option>
+                </select>
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-lux-600 text-white text-sm font-medium rounded-lg hover:bg-lux-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lux-500 transition-colors">
+                    <i class="bi bi-check-lg mr-1.5"></i> Apply
+                </button>
+            </div>
+            <span class="text-xs text-gray-500 dark:text-gray-400" id="selected-count">0 selected</span>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux overflow-hidden border border-gray-100 dark:border-gray-700 reveal">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+                            <th class="px-6 py-4 w-10">
+                                <input type="checkbox" id="select-all" class="rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
+                            </th>
+                            <th class="px-6 py-4 font-semibold">Product</th>
+                            <th class="px-6 py-4 font-semibold">Category</th>
+                            <th class="px-6 py-4 font-semibold">Price</th>
+                            <th class="px-6 py-4 font-semibold">Status</th>
+                            <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        {% for product in products %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-all duration-200 group">
+                            <td class="px-6 py-4">
+                                <input type="checkbox" name="ids" value="{{ product.id }}" class="bulk-checkbox rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-gray-900 dark:text-white">{{ product.name }}</div>
+                                <div class="text-xs text-gray-500">{{ product.brand.name }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ product.category.name }}</td>
+                            <td class="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white">${{ product.price }}</td>
+                            <td class="px-6 py-4">
+                                {% if product.available %}
+                                    <span class="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-md text-xs font-bold uppercase">Active</span>
+                                {% else %}
+                                    <span class="bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 px-2 py-1 rounded-md text-xs font-bold uppercase">Hidden</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-right space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <a href="{% url 'seller_product_edit' product.uuid %}" class="text-lux-600 hover:text-lux-700 font-bold text-xs uppercase tracking-tighter">Edit</a>
+                                <form action="{% url 'seller_product_delete' product.uuid %}" method="post" class="inline" onsubmit="return confirm('Archive this product?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-500 hover:text-red-600 font-bold text-xs uppercase tracking-tighter">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-20 text-center text-gray-500 dark:text-gray-400">
+                                <i class="bi bi-box-seam text-5xl mb-4 block opacity-20"></i>
+                                No products found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+
+    <!-- Pagination -->
+    {% if products.has_other_pages %}
+    <div class="mt-8 flex justify-center">
+        <nav class="inline-flex items-center space-x-2">
+            {% if products.has_previous %}
+                <a href="?page={{ products.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+                   class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                    </svg>
+                </a>
+            {% endif %}
+
+            {% for i in products.paginator.page_range %}
+                {% if products.number == i %}
+                    <span class="px-4 py-2 bg-lux-600 text-white rounded-xl font-bold shadow-md">{{ i }}</span>
+                {% elif i > products.number|add:'-3' and i < products.number|add:'3' %}
+                    <a href="?page={{ i }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+                       class="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 font-medium">
+                        {{ i }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+
+            {% if products.has_next %}
+                <a href="?page={{ products.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+                   class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const selectAllCheckbox = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.bulk-checkbox');
+    const selectedCountSpan = document.getElementById('selected-count');
+
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('.bulk-checkbox:checked').length;
+        selectedCountSpan.textContent = selected + ' selected';
+    }
+
+    selectAllCheckbox.addEventListener('change', function(e) {
+        checkboxes.forEach(cb => {
+            cb.checked = e.target.checked;
+        });
+        updateSelectedCount();
+    });
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const allChecked = document.querySelectorAll('.bulk-checkbox:checked').length === checkboxes.length;
+            selectAllCheckbox.checked = allChecked;
+            updateSelectedCount();
+        });
+    });
+
+    // Initial count
+    updateSelectedCount();
+</script>
+{% endblock %}

@@ -1,0 +1,205 @@
+{% extends "base_admin.html" %}
+{% load custom_filters %}
+
+{% block title %}Payment History - Admin Portal{% endblock %}
+{% block header_title %}Financial Transactions{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Payments</h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Track and manage all transaction records.</p>
+        </div>
+        
+        <div class="flex items-center gap-3 reveal">
+            <form method="get" class="flex flex-wrap items-center gap-3">
+                <div class="relative">
+                    <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search ID, Order, Email..." 
+                           class="pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-lux-400 focus:outline-none dark:text-white transition-colors">
+                    <div class="absolute left-3 top-2.5 text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-1">
+                    <select name="status" onchange="this.form.submit()" class="bg-transparent text-sm border-none focus:ring-0 dark:text-gray-200 px-3 cursor-pointer">
+                        <option value="">All Statuses</option>
+                        <option value="success" {% if request.GET.status == 'success' %}selected{% endif %}>Success</option>
+                        <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="failed" {% if request.GET.status == 'failed' %}selected{% endif %}>Failed</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="bg-lux-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-lux-700 transition-colors shadow-sm">
+                    Search
+                </button>
+
+                <a href="{% url 'export_payments_csv' %}?{{ request.GET.urlencode }}" 
+                   class="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                   title="Download filtered results as CSV">
+                    <i class="bi bi-download"></i> Export CSV
+                </a>
+
+                {% if request.GET.q or request.GET.status %}
+                    <a href="{% url 'admin_payment_list' %}" class="text-xs text-gray-500 hover:text-lux-600 font-medium px-2">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Action Form -->
+    <form method="post" action="{% url 'admin_payment_bulk_action' %}" id="bulk-action-form">
+        {% csrf_token %}
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux overflow-hidden border border-gray-100 dark:border-gray-700 reveal delay-100">
+            <!-- Bulk Action Toolbar -->
+            <div class="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+                <div class="flex items-center gap-3">
+                    <select name="action" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white px-3 py-2 focus:ring-lux-500 focus:border-lux-500">
+                        <option value="">-- Bulk Action --</option>
+                        <option value="delete">Delete Selected</option>
+                    </select>
+                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-lux-600 text-white text-sm font-medium rounded-lg hover:bg-lux-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lux-500 transition-colors">
+                        <i class="bi bi-check-lg mr-1.5"></i> Apply
+                    </button>
+                </div>
+                <span class="text-xs text-gray-500 dark:text-gray-400" id="selected-count">0 selected</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+                        <tr>
+                            <th class="px-6 py-4 w-10">
+                                <input type="checkbox" id="select-all" class="rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
+                            </th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Transaction ID</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                <a href="{% url_replace 'order_by' 'order__display_id' %}" class="hover:text-gray-700 dark:hover:text-white">
+                                    Order 
+                                    {% if request.GET.order_by == 'order__display_id' %}<i class="bi bi-caret-down-fill"></i>
+                                    {% elif request.GET.order_by == '-order__display_id' %}<i class="bi bi-caret-up-fill"></i>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        {% for payment in payments %}
+                        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <input type="checkbox" name="ids" value="{{ payment.id }}" class="bulk-checkbox rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500 dark:text-gray-400">
+                                #{{ payment.id|stringformat:"06d" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <a href="{% url 'order_detail' payment.order.display_id|default:payment.order.public_id %}" class="text-sm font-medium text-lux-600 hover:underline">
+                                    #{{ payment.order.display_id|default:payment.order.public_id|truncatechars:12 }}
+                                </a>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ payment.order.customer.fullname }}</div>
+                                <div class="text-xs text-gray-500">{{ payment.order.customer.email }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+                                ${{ payment.amount }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold
+                                    {% if payment.status == 'success' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+                                    {% elif payment.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+                                    {% else %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400{% endif %}">
+                                    {{ payment.get_status_display|title }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                {{ payment.paid_at|date:"M d, Y H:i" }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-20 text-center text-gray-500 dark:text-gray-400">
+                                <i class="bi bi-cash-stack text-5xl mb-4 block opacity-20"></i>
+                                No payment records found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+
+    <!-- Pagination Navigation -->
+    {% if payments.has_other_pages %}
+    <div class="mt-8 flex justify-center">
+        <nav class="flex justify-center items-center space-x-2">
+            {% if payments.has_previous %}
+                <a href="?page={{ payments.previous_page_number }}{% url_replace_params 'page' payments.previous_page_number %}"
+                   class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                    </svg>
+                </a>
+            {% endif %}
+            {% for i in payments.paginator.page_range %}
+                {% if payments.number == i %}
+                    <span class="px-4 py-2 bg-lux-600 text-white rounded-xl font-bold shadow-md">{{ i }}</span>
+                {% elif i > payments.number|add:'-3' and i < payments.number|add:'3' %}
+                    <a href="?page={{ i }}{% url_replace_params 'page' i %}"
+                       class="px-4 py-2 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 font-medium">
+                        {{ i }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+
+            {% if payments.has_next %}
+                <a href="?page={{ payments.next_page_number }}{% url_replace_params 'page' payments.next_page_number %}"
+                   class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- JavaScript for Bulk Selection -->
+<script>
+    const selectAllCheckbox = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.bulk-checkbox');
+    const selectedCountSpan = document.getElementById('selected-count');
+
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('.bulk-checkbox:checked').length;
+        selectedCountSpan.textContent = selected + ' selected';
+    }
+
+    selectAllCheckbox.addEventListener('change', function(e) {
+        checkboxes.forEach(cb => {
+            cb.checked = e.target.checked;
+        });
+        updateSelectedCount();
+    });
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const allChecked = document.querySelectorAll('.bulk-checkbox:checked').length === checkboxes.length;
+            selectAllCheckbox.checked = allChecked;
+            updateSelectedCount();
+        });
+    });
+
+    // Initial count
+    updateSelectedCount();
+</script>
+{% endblock %}

@@ -1,0 +1,542 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}LuxMarket - Discover Luxury{% endblock %}
+
+{% block content %}
+<!-- ================================================================ -->
+<!-- HERO – always visible, but message changes based on auth status   -->
+<!-- ================================================================ -->
+<div class="relative bg-white border-b border-gray-200 overflow-hidden">
+  <div class="absolute top-0 left-0 w-full h-[120%] bg-purple-700 overflow-hidden">
+    <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?q=80&w=2070"
+         class="w-full h-full object-cover opacity-60 mix-blend-multiply pointer-events-none"
+         alt="" id="hero-parallax-bg">
+    <div class="absolute inset-0 bg-gradient-to-b from-purple-900/40 via-transparent to-black/20"></div>
+  </div>
+
+  <div class="relative z-10 max-w-7xl mx-auto px-4 py-20 sm:py-24 text-center">
+    <h1 class="font-display text-3xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight mb-4 animate-in"
+        style="text-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+      {% if user.is_authenticated %}
+        Welcome back, {{ user.username }}!
+      {% else %}
+        Curated Elegance
+      {% endif %}
+    </h1>
+    <p class="text-base sm:text-lg md:text-xl text-purple-100 max-w-2xl mx-auto mb-8 animate-in delay-100"
+       style="text-shadow: 0 1px 4px rgba(0,0,0,0.2);">
+      {% if user.is_authenticated %}
+        Your personal luxury marketplace awaits.
+      {% else %}
+        Discover hand‑picked products from top sellers. Luxury shopping redefined.
+      {% endif %}
+    </p>
+    <!-- Search form – works for everyone; guests get no results anyway -->
+    <div class="max-w-md mx-auto flex gap-2 animate-in delay-200">
+      <form class="w-full" method="get" action="{% url 'home' %}">
+        <div class="flex bg-white border border-gray-200 rounded-full overflow-hidden shadow-sm">
+          <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Search for items..."
+                 class="flex-1 bg-transparent text-gray-900 placeholder-gray-400 px-6 py-3 focus:outline-none">
+          <button type="submit" class="bg-lux-600 text-white px-6 py-3 font-semibold rounded-r-full hover:bg-lux-700 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- GUEST ONLY: Marketing Banners / Ads                               -->
+<!-- ================================================================ -->
+{% if not user.is_authenticated %}
+<section class="bg-gray-50 py-16 border-b border-gray-200">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl font-bold text-gray-900 text-center mb-12">Experience Luxury</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {% for ad in ads %}
+        <div class="bg-white rounded-2xl shadow-lux overflow-hidden transition-transform hover:-translate-y-1 duration-300">
+          <img src="{{ ad.image }}" alt="{{ ad.title }}" class="w-full h-48 object-cover">
+          <div class="p-6">
+            <h3 class="font-bold text-xl text-gray-900">{{ ad.title }}</h3>
+            <p class="text-gray-600 mt-2">{{ ad.subtitle }}</p>
+            <a href="{{ ad.link }}" class="mt-4 inline-block bg-lux-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-lux-700 transition-colors">
+              {{ ad.cta_text }}
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="text-center mt-12">
+      <a href="{% url 'login' %}" class="inline-block bg-lux-600 text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-lux-700 transition-colors shadow-lg">
+        Join to Start Shopping
+      </a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ================================================================ -->
+<!-- AUTHENTICATED ONLY: All product sections                         -->
+<!-- ================================================================ -->
+{% if user.is_authenticated %}
+
+  <!-- ✅ Featured Products Carousel -->
+  {% if featured_products %}
+  <div class="bg-white dark:bg-gray-900 py-12 border-b border-gray-100 dark:border-gray-800">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex items-center justify-between mb-6">
+              <h2 class="font-display text-2xl font-bold text-gray-900 dark:text-white">✨ Featured Products</h2>
+              <div class="flex gap-2">
+                  <button id="carousel-prev"
+                          class="p-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-lux-100 dark:hover:bg-lux-900 text-gray-600 dark:text-gray-300 hover:text-lux-600 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                      </svg>
+                  </button>
+                  <button id="carousel-next"
+                          class="p-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-lux-100 dark:hover:bg-lux-900 text-gray-600 dark:text-gray-300 hover:text-lux-600 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                      </svg>
+                  </button>
+              </div>
+          </div>
+
+          <!-- Carousel Track Wrapper -->
+          <div class="overflow-hidden">
+              <div id="carousel-track" class="flex gap-5 transition-transform duration-500 ease-in-out">
+                  {% for product in featured_products %}
+                  <div class="carousel-slide flex-none w-64 group bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden hover-scale transition-all duration-300">
+                      <div class="relative h-44 overflow-hidden">
+                          {% with product.images.first as img %}
+                              {% if img %}
+                                  <img src="{{ img.image.url }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="{{ product.name }}">
+                              {% else %}
+                                  <div class="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400">No Image</div>
+                              {% endif %}
+                          {% endwith %}
+                          {% if product.discount_price is not None %}
+                              <span class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">Sale</span>
+                          {% endif %}
+                          <a href="{% url 'product_detail' product.uuid %}" class="absolute inset-0 z-10"></a>
+                      </div>
+                      <div class="p-4">
+                          <h3 class="text-sm font-semibold text-gray-900 dark:text-white line-clamp-1 mb-1">{{ product.name }}</h3>
+                          <div class="flex items-baseline gap-2 mb-3">
+                              {% if product.discount_price is not None %}
+                                  <span class="text-lg font-bold text-lux-600">${{ product.discount_price }}</span>
+                                  <span class="text-xs text-gray-400 line-through">${{ product.price }}</span>
+                              {% else %}
+                                  <span class="text-lg font-bold text-gray-800 dark:text-gray-100">${{ product.price }}</span>
+                              {% endif %}
+                          </div>
+                          <div class="flex gap-2">
+                              <a href="{% url 'product_detail' product.uuid %}"
+                                 class="flex-1 text-center border border-gray-300 dark:border-gray-600 hover:border-lux-400 text-gray-700 dark:text-gray-300 py-1.5 rounded-xl text-xs transition-colors">
+                                  Details
+                              </a>
+                              {% if user.role == 'CUSTOMER' %}
+                                  <button class="add-to-cart-btn flex-1 bg-lux-600 hover:bg-lux-700 text-white py-1.5 rounded-xl text-xs transition-colors"
+                                          data-product-id="{{ product.id }}" data-product-name="{{ product.name }}">
+                                      Add
+                                  </button>
+                              {% endif %}
+                          </div>
+                      </div>
+                  </div>
+                  {% endfor %}
+              </div>
+          </div>
+
+          <!-- Dot Indicators -->
+          <div id="carousel-dots" class="flex justify-center gap-2 mt-6"></div>
+      </div>
+  </div>
+  {% endif %}
+
+  <!-- 🆕 Categories Grid -->
+  {% if categories %}
+  <section class="bg-white dark:bg-gray-900 py-16 border-b border-gray-100 dark:border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-12">
+        <h2 class="font-display text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">Shop by Category</h2>
+        <p class="mt-3 text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">Explore our curated collections of premium products</p>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {% for cat in categories %}
+          {% with cat.products.all.0.images.all.0 as product_img %}
+          <button
+            data-category-slug="{{ cat.slug }}"
+            data-category-name="{{ cat.name }}"
+            class="category-tile group relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-lux-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+            style="background-image: url('{% if product_img %}{{ product_img.image.url }}{% else %}https://images.unsplash.com/photo-{{ cat.slug|slice:":8" }}?w=600&h=400&fit=crop{% endif %}'); background-size: cover; background-position: center;"
+          >
+          {% endwith %}
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent transition-opacity duration-500 group-hover:opacity-80"></div>
+            <div class="absolute bottom-0 left-0 right-0 p-5 text-white text-left">
+              <h3 class="text-lg sm:text-xl font-bold drop-shadow-lg mb-1">{{ cat.name }}</h3>
+              {% if cat.description %}
+                <p class="text-xs sm:text-sm text-white/80 line-clamp-2 drop-shadow">{{ cat.description }}</p>
+              {% endif %}
+              <span class="mt-2 inline-flex items-center text-xs font-semibold text-lux-300 group-hover:translate-x-1 transition-transform duration-300">
+                Explore
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 ml-1">
+                  <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            </div>
+          </button>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Product Area (Active Category + Grid) -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <!-- Category Details Header -->
+      <div id="category-header" class="mb-12 border-l-4 border-lux-600 pl-6 py-2 {% if not active_category %}hidden{% endif %}">
+          <div class="flex items-center gap-3 text-lux-600 mb-2">
+              <i id="header-icon" class="bi {{ active_category.icon|default:'bi-grid-fill' }} text-2xl"></i>
+              <span class="text-sm font-bold uppercase tracking-widest">Collection</span>
+          </div>
+          <h2 id="header-name" class="font-display text-4xl font-bold text-gray-900 dark:text-white mb-3">{{ active_category.name|default:'' }}</h2>
+          <p id="header-description" class="text-gray-600 dark:text-gray-400 max-w-3xl leading-relaxed">{{ active_category.description|default:'' }}</p>
+      </div>
+
+      <!-- Product grid container (AJAX populated) -->
+      <div class="reveal delay-100 min-h-[400px] relative" id="product-grid-container">
+          <!-- Loading Spinner Overlay -->
+          <div id="loading-spinner" class="hidden absolute inset-0 z-30 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-[1px] rounded-3xl">
+              <div class="flex flex-col items-center gap-3">
+                  <div class="w-12 h-12 border-4 border-lux-200 border-t-lux-600 rounded-full animate-spin"></div>
+                  <p class="text-lux-700 dark:text-lux-400 font-medium text-sm animate-pulse tracking-wide">Loading Luxury...</p>
+              </div>
+          </div>
+
+          <!-- Initial content: either product grid or empty state -->
+          {% if products %}
+              {% include 'product_grid.html' %}
+          {% else %}
+              <div class="text-center py-20 text-gray-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 mx-auto mb-4 opacity-50">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                  </svg>
+                  <p class="text-lg font-medium">Select a category to explore products</p>
+              </div>
+          {% endif %}
+      </div>
+  </div>
+
+  <!-- Quick View Modal -->
+  <div id="quickViewModal" class="fixed inset-0 z-[100] hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+          <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick="closeQuickView()"></div>
+          <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-gray-100 dark:border-gray-700 animate-in">
+              <button onclick="closeQuickView()" class="absolute top-4 right-4 z-50 p-2 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+              </button>
+              <div class="grid grid-cols-1 md:grid-cols-2">
+                  <div class="bg-gray-100 dark:bg-gray-900 h-96 md:h-full">
+                      <img id="qv-image" src="" class="w-full h-full object-cover">
+                  </div>
+                  <div class="p-8">
+                      <p id="qv-category" class="text-lux-600 font-medium text-sm"></p>
+                      <h2 id="qv-name" class="font-display text-3xl font-bold text-gray-900 dark:text-white mt-2"></h2>
+                      <div class="flex items-baseline gap-3 mt-4">
+                          <span id="qv-effective-price" class="text-3xl font-bold text-lux-600"></span>
+                          <span id="qv-original-price" class="text-lg text-gray-400 line-through hidden"></span>
+                      </div>
+                      <div class="mt-6">
+                          <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Description</h3>
+                          <p id="qv-description" class="text-gray-600 dark:text-gray-400 mt-2 text-sm leading-relaxed line-clamp-4"></p>
+                      </div>
+                      <div class="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700 flex items-center gap-4">
+                          <div class="flex items-center border border-gray-300 dark:border-gray-600 rounded-full">
+                              <button class="px-3 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-l-full" onclick="changeQVQty(-1)">−</button>
+                              <input id="qv-qtyInput" type="text" value="1" class="w-10 text-center font-semibold focus:outline-none dark:bg-transparent dark:text-white text-sm" readonly>
+                              <button class="px-3 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-r-full" onclick="changeQVQty(1)">+</button>
+                          </div>
+                          <button id="qv-add-btn" class="flex-1 bg-lux-600 hover:bg-lux-700 text-white py-3 rounded-xl font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                              </svg>
+                              Add to Cart
+                          </button>
+                      </div>
+                      <div class="mt-4">
+                          <a id="qv-details-link" href="" class="text-sm font-semibold text-lux-600 hover:text-lux-700 transition-colors inline-flex items-center gap-1">
+                              Full Details
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                              </svg>
+                          </a>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </div>
+{% endif %}
+<!-- END AUTHENTICATED SECTION -->
+
+{% endblock %}
+
+{% block extra_js %}
+{% if user.is_authenticated %}
+<script>
+    // ===========================
+    // CAROUSEL LOGIC
+    // ===========================
+    const track = document.getElementById('carousel-track');
+    const dotsContainer = document.getElementById('carousel-dots');
+
+    if (track) {
+        const slides = track.querySelectorAll('.carousel-slide');
+        const slideWidth = 256 + 20; // w-64 (256px) + gap-5 (20px)
+        let visibleCount = Math.max(1, Math.floor(track.parentElement.offsetWidth / slideWidth));
+        let currentIndex = 0;
+        const totalSlides = slides.length;
+        const maxIndex = Math.max(0, totalSlides - visibleCount);
+
+        // Build dots
+        for (let i = 0; i <= maxIndex; i++) {
+            const dot = document.createElement('button');
+            dot.className = `w-2 h-2 rounded-full transition-all duration-300 ${i === 0 ? 'bg-lux-600 w-6' : 'bg-gray-300 dark:bg-gray-600'}`;
+            dot.addEventListener('click', () => goTo(i));
+            dotsContainer.appendChild(dot);
+        }
+
+        function updateDots() {
+            dotsContainer.querySelectorAll('button').forEach((dot, i) => {
+                dot.className = `w-2 h-2 rounded-full transition-all duration-300 ${i === currentIndex ? 'bg-lux-600 w-6' : 'bg-gray-300 dark:bg-gray-600'}`;
+            });
+        }
+
+        function goTo(index) {
+            currentIndex = Math.max(0, Math.min(index, maxIndex));
+            track.style.transform = `translateX(-${currentIndex * slideWidth}px)`;
+            updateDots();
+        }
+
+        document.getElementById('carousel-prev').addEventListener('click', () => goTo(currentIndex - 1));
+        document.getElementById('carousel-next').addEventListener('click', () => goTo(currentIndex + 1));
+
+        // Auto-play every 4 seconds
+        setInterval(() => goTo(currentIndex >= maxIndex ? 0 : currentIndex + 1), 4000);
+
+        // Recalculate on resize
+        window.addEventListener('resize', () => {
+            visibleCount = Math.floor(track.parentElement.offsetWidth / slideWidth);
+            goTo(0);
+        });
+    }
+
+    // ===========================
+    // CATEGORY TILE AJAX LOADING
+    // ===========================
+    const categoryTiles = document.querySelectorAll('.category-tile');
+    const productContainer = document.getElementById('product-grid-container');
+    const spinner = document.getElementById('loading-spinner');
+    const categoryHeader = document.getElementById('category-header');
+    const headerName = document.getElementById('header-name');
+    const headerDesc = document.getElementById('header-description');
+    const headerIcon = document.getElementById('header-icon');
+
+    function clearActiveTiles() {
+        categoryTiles.forEach(tile => {
+            tile.classList.remove('ring-4', 'ring-lux-400', 'ring-offset-2', 'dark:ring-offset-gray-900', 'scale-[1.02]');
+        });
+    }
+
+    function setActiveTile(tile) {
+        clearActiveTiles();
+        tile.classList.add('ring-4', 'ring-lux-400', 'ring-offset-2', 'dark:ring-offset-gray-900', 'scale-[1.02]');
+    }
+
+    async function loadCategoryProducts(slug, name, description, icon = 'bi-grid-fill') {
+        // Show spinner, dim container
+        productContainer.style.opacity = '0.5';
+        spinner.classList.remove('hidden');
+
+        try {
+            const url = `{% url 'home' %}?category=${slug}`;
+            const response = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) throw new Error('Network error');
+            const html = await response.text();
+            productContainer.innerHTML = html;
+            categoryHeader.classList.remove('hidden');
+            headerName.textContent = name;
+            headerDesc.textContent = description || '';
+            headerIcon.className = `bi ${icon} text-2xl`;
+            window.history.pushState({}, '', url);
+
+            // Re-trigger reveal animations if any
+            productContainer.querySelectorAll('.reveal').forEach(el => {
+                revealObserver.observe(el);
+            });
+        } catch (err) {
+            console.error(err);
+            productContainer.innerHTML = `<div class="text-center py-20 text-red-500">Failed to load products. Please try again.</div>`;
+        } finally {
+            spinner.classList.add('hidden');
+            productContainer.style.opacity = '1';
+        }
+    }
+
+    categoryTiles.forEach(tile => {
+        tile.addEventListener('click', function(e) {
+            e.preventDefault();
+            const slug = this.dataset.categorySlug;
+            const name = this.dataset.categoryName;
+            const desc = this.querySelector('p')?.textContent.trim() || '';
+            setActiveTile(this);
+            loadCategoryProducts(slug, name, desc);
+        });
+    });
+
+    // Highlight tile if active_category is set from server
+    const initialSlug = "{{ active_category.slug|default:'' }}";
+    if (initialSlug) {
+        const activeTile = document.querySelector(`.category-tile[data-category-slug="${initialSlug}"]`);
+        if (activeTile) setActiveTile(activeTile);
+    }
+
+    // ===========================
+    // QUICK VIEW & ADD TO CART
+    // ===========================
+    let currentQVProductId = null;
+
+    function changeQVQty(delta) {
+        const input = document.getElementById('qv-qtyInput');
+        let val = parseInt(input.value) || 1;
+        val = Math.max(1, val + delta);
+        input.value = val;
+    }
+
+    async function openQuickView(uuid) {
+        try {
+            const res = await fetch(`/api/product/${uuid}/`);
+            const data = await res.json();
+            currentQVProductId = data.id;
+            document.getElementById('qv-name').textContent = data.name;
+            document.getElementById('qv-category').textContent = data.category;
+            document.getElementById('qv-description').textContent = data.description;
+            document.getElementById('qv-effective-price').textContent = `$${data.effective_price}`;
+            document.getElementById('qv-image').src = data.images[0] || 'https://via.placeholder.com/400';
+            document.getElementById('qv-details-link').href = `/product/${uuid}/`;
+            document.getElementById('qv-qtyInput').value = 1;
+            const originalPriceEl = document.getElementById('qv-original-price');
+            if (data.discount_price) {
+                originalPriceEl.textContent = `$${data.price}`;
+                originalPriceEl.classList.remove('hidden');
+            } else {
+                originalPriceEl.classList.add('hidden');
+            }
+            document.getElementById('quickViewModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        } catch (err) {
+            showToast('Could not load product details', 'error');
+        }
+    }
+
+    function closeQuickView() {
+        document.getElementById('quickViewModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    document.getElementById('qv-add-btn').addEventListener('click', async () => {
+        if (!currentQVProductId) return;
+        const qty = parseInt(document.getElementById('qv-qtyInput').value);
+        const res = await ajaxPost(`/add-to-cart/${currentQVProductId}/`, { quantity: qty });
+        if (res.success) {
+            updateCartCount(res.cart_count);
+            showToast(`Added to cart`);
+            closeQuickView();
+        }
+    });
+
+    // Event delegation for dynamic content (Add to Cart & Quick View)
+    document.addEventListener('click', async (e) => {
+        const addBtn = e.target.closest('.add-to-cart-btn');
+        if (addBtn) {
+            const id = addBtn.dataset.productId;
+            const name = addBtn.dataset.productName;
+            const res = await ajaxPost(`/add-to-cart/${id}/`, { quantity: 1 });
+            if (res.success) {
+                updateCartCount(res.cart_count);
+                showToast(`Added ${name} to cart`);
+            }
+        }
+
+        const qvBtn = e.target.closest('.quick-view-btn');
+        if (qvBtn) {
+            openQuickView(qvBtn.dataset.productUuid);
+        }
+    });
+
+    // ===========================
+    // HELPER FUNCTIONS
+    // ===========================
+    async function ajaxPost(url, data) {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(data)
+        });
+        return response.json();
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showToast(message, type = 'success') {
+        // Your existing toast logic – implement as needed
+        console.log(message, type);
+    }
+
+    function updateCartCount(count) {
+        const cartCountEl = document.getElementById('cart-count');
+        if (cartCountEl) {
+            cartCountEl.textContent = count;
+            if (count > 0) cartCountEl.classList.remove('hidden');
+            else cartCountEl.classList.add('hidden');
+        }
+    }
+</script>
+{% endif %}
+
+<!-- Parallax effect – works for everyone -->
+<script>
+    const heroParallaxBg = document.getElementById('hero-parallax-bg');
+    if (heroParallaxBg) {
+        window.addEventListener('scroll', () => {
+            heroParallaxBg.style.transform = `translateY(${window.pageYOffset * 0.2}px)`;
+        });
+    }
+</script>
+{% endblock %}

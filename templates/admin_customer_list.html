@@ -1,0 +1,87 @@
+{% extends 'base_admin.html' %}
+{% block title %}Customer Management - Admin Panel{% endblock %}
+{% block header_title %}User Management{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header Section unchanged ... -->
+
+    <form method="post" action="{% url 'admin_customer_bulk_action' %}" id="bulk-action-form">
+        {% csrf_token %}
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux overflow-hidden border border-gray-100 dark:border-gray-700 reveal">
+            <!-- Bulk Action Toolbar unchanged ... -->
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+                        <tr>
+                            <th class="px-6 py-4 w-10">...</th>
+                            <th class="px-6 py-4 ...">Customer</th>
+                            <th class="px-6 py-4 ...">Email</th>
+                            <th class="px-6 py-4 ...">Status</th>
+                            <th class="px-6 py-4 ... text-center">Orders</th>
+                            <th class="px-6 py-4 ... text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        {% for customer in customers %}
+                        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <input type="checkbox" name="ids" value="{{ customer.id }}" class="bulk-checkbox ...">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-lux-gradient ...">
+                                        {{ customer.fullname|slice:":1"|upper }}
+                                    </div>
+                                    <div class="font-medium ...">{{ customer.fullname }}</div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                {{ customer.email }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if customer.is_active %}
+                                    <span class="px-3 py-1 rounded-full ... bg-green-100 text-green-700 ...">Active</span>
+                                {% else %}
+                                    <span class="px-3 py-1 rounded-full ... bg-red-100 text-red-700 ...">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-bold ...">
+                                {{ customer.orders.count }}
+                            </td>
+                            <!--  Actions column with Reset Password link  -->
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="{% url 'admin_reset_password' customer.id %}" 
+                                       class="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-300 transition-colors">
+                                        <i class="bi bi-key mr-1"></i> Reset Password
+                                    </a>
+                                    <a href="{% url 'order_list' %}?q={{ customer.email }}" 
+                                       class="text-lux-600 hover:text-lux-700 transition-colors inline-flex items-center gap-1.5 group">
+                                        <i class="bi bi-receipt transition-transform group-hover:scale-110"></i>
+                                        View Orders
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-20 text-center ...">
+                                <i class="bi bi-person-x text-5xl mb-4 block opacity-20"></i>
+                                No customers found in the system.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- JavaScript for Bulk Selection unchanged -->
+<script>
+    // ... existing script ...
+</script>
+{% endblock %}

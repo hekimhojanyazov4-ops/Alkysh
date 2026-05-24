@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Checkout{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-12">
+    <h2 class="font-display text-4xl font-bold text-gray-800 dark:text-white mb-8">Checkout</h2>
+    {% if items %}
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-8 reveal">
+        <div class="md:col-span-3 bg-white dark:bg-gray-800 rounded-2xl shadow-lux p-6">
+            <h3 class="text-lg font-semibold mb-4 dark:text-white">Order Items</h3>
+            {% for item in items %}
+            <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                <span class="dark:text-gray-300">{{ item.quantity }}x {{ item.product.name }}</span>
+                <span class="font-medium dark:text-white">${{ item.line_total }}</span>
+            </div>
+            {% endfor %}
+            <div class="flex justify-between text-xl font-bold pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
+                <span class="dark:text-white">Total</span>
+                <span class="dark:text-white">${{ total }}</span>
+            </div>
+        </div>
+        <div class="md:col-span-2 glass rounded-2xl p-6">
+            <h3 class="text-lg font-semibold mb-4 dark:text-white">Payment Method</h3>
+            <form method="post" action="{% url 'create_order' %}">
+                {% csrf_token %}
+                <div class="space-y-3">
+                    <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <input type="radio" name="payment_method" value="Credit/Debit Card" checked class="text-lux-600">
+                        <span class="ml-3 font-medium dark:text-gray-200">Credit/Debit Card</span>
+                    </label>
+                    <label class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <input type="radio" name="payment_method" value="Cash on Delivery" class="text-lux-600">
+                        <span class="ml-3 font-medium dark:text-gray-200">Cash on Delivery</span>
+                    </label>
+                </div>
+                <button type="submit" class="mt-6 w-full bg-lux-600 text-white py-3 rounded-xl font-semibold hover:bg-lux-700 transition-colors shadow-md">
+                    Place Order
+                </button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-20 dark:text-gray-400">Nothing to checkout.</div>
+    {% endif %}
+</div>
+{% endblock %}

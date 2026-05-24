@@ -1,0 +1,54 @@
+{% extends 'base_admin.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block header_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8 reveal">{{ title }}</h1>
+
+    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux p-8 border border-gray-100 dark:border-gray-700 reveal">
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            {# Non-field errors #}
+            {% if form.non_field_errors %}
+                <div class="mb-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                    {% for error in form.non_field_errors %}
+                        <p class="text-red-600 dark:text-red-400 text-sm">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="space-y-5">
+                {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ field.label }}
+                            {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% if field.errors %}
+                            <div class="text-red-500 dark:text-red-400 text-xs mt-1">
+                                {% for error in field.errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="flex justify-end gap-4 mt-8">
+                <a href="{% url 'admin_brand_list' %}" class="px-8 py-3 text-gray-500 font-medium hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors">Cancel</a>
+                <button type="submit"
+                        class="bg-lux-600 text-white px-10 py-3 rounded-xl font-semibold hover:bg-lux-700 transition-colors shadow-lg focus:outline-none focus:ring-2 focus:ring-lux-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                    Save Brand
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

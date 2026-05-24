@@ -1,0 +1,65 @@
+{% if products %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+        {% for product in products %}
+            <div class="group bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden hover-scale transition-all duration-300 reveal" id="product-card-{{ product.id }}">
+                <div class="relative h-56 overflow-hidden">
+                    {% if product.images.first %}
+                        <img src="{{ product.images.first.image.url }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="{{ product.name }}">
+                    {% else %}
+                        <div class="w-full h-full bg-gray-100 dark:bg-gray-700 flex flex-col items-center justify-center text-gray-400 gap-2">
+                            <i class="bi bi-image text-3xl opacity-50"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-tighter">No Visual Available</span>
+                        </div>
+                    {% endif %}
+
+                    {% if product.discount_price is not None %}
+                        <span class="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg z-20 uppercase">Sale</span>
+                    {% endif %}
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
+
+                    <!-- Quick Actions Overlay -->
+                    <div class="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20">
+                        <button class="quick-view-btn p-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-full shadow-xl hover:bg-lux-600 hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-300"
+                                data-product-uuid="{{ product.uuid }}" title="Quick View">
+                            <i class="bi bi-eye text-lg"></i>
+                        </button>
+                        <button class="wishlist-btn p-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-full shadow-xl hover:bg-red-500 hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-300 delay-75" 
+                                data-product-id="{{ product.id }}" title="Toggle Wishlist">
+                            <i class="bi {% if product.id in favorite_ids %}bi-heart-fill text-red-500{% else %}bi-heart{% endif %} text-lg"></i>
+                        </button>
+                    </div>
+                    <a href="{% url 'product_detail' product.uuid %}" class="absolute inset-0 z-0" aria-label="View {{ product.name }} details"></a>
+                </div>
+                <div class="p-5">
+                    <p class="text-[10px] font-bold text-lux-500 uppercase tracking-widest mb-1">{{ product.brand.name }}</p>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-1 group-hover:text-lux-600 transition-colors">{{ product.name }}</h3>
+                    <div class="flex items-baseline gap-2 mb-4">
+                        {% if product.discount_price is not None %}
+                            <span class="text-2xl font-bold text-lux-600">${{ product.discount_price }}</span>
+                            <span class="text-sm text-gray-400 line-through">${{ product.price }}</span>
+                        {% else %}
+                            <span class="text-2xl font-bold text-gray-900 dark:text-gray-100">${{ product.price }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex gap-2 pt-2 border-t border-gray-50 dark:border-gray-700/50">
+                        <a href="{% url 'product_detail' product.uuid %}" class="flex-1 text-center border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-2.5 rounded-xl text-xs font-bold transition-all">Details</a>
+                        {% if user.is_authenticated and user.role == 'CUSTOMER' %}
+                            <button class="add-to-cart-btn flex-1 bg-lux-600 hover:bg-lux-700 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95"
+                                    data-product-id="{{ product.id }}" data-product-name="{{ product.name }}">
+                                <i class="bi bi-cart-plus mr-1"></i> Add
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-32 bg-white dark:bg-gray-800 rounded-3xl shadow-lux border border-gray-100 dark:border-gray-700">
+        <div class="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="bi bi-search text-3xl text-gray-300"></i>
+        </div>
+        <h3 class="text-2xl font-display font-bold text-gray-900 dark:text-white mb-2">No items found</h3>
+        <p class="text-gray-500 dark:text-gray-400 max-w-xs mx-auto text-sm leading-relaxed">We couldn't find any products matching your current criteria. Try selecting a different category or clearing your search filters.</p>
+    </div>
+{% endif %}

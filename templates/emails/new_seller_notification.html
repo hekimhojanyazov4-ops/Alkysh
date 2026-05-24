@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Seller Application - LuxMarket</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+        .header { background-color: #7c3aed; color: #ffffff; padding: 20px; text-align: center; }
+        .content { padding: 20px; color: #333333; line-height: 1.6; }
+        .button-container { text-align: center; padding: 20px; }
+        .button { background-color: #7c3aed; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; }
+        .footer { background-color: #f9f9f9; color: #888888; padding: 20px; text-align: center; font-size: 12px; border-top: 1px solid #eeeeee; }
+        .highlight { font-weight: bold; color: #7c3aed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>LuxMarket Admin Notification</h2>
+        </div>
+        <div class="content">
+            <p>Dear Administrator,</p>
+            <p>A new seller has just registered on LuxMarket and is awaiting your approval.</p>
+            <p>
+                <span class="highlight">Seller Name:</span> {{ seller_name }}<br>
+                <span class="highlight">Seller Email:</span> {{ seller_email }}<br>
+                <span class="highlight">Application Time:</span> {{ timestamp|date:"F d, Y H:i" }}
+            </p>
+            <p>Please review their application and verification documents.</p>
+        </div>
+        <div class="button-container">
+            <a href="{{ admin_url }}" class="button">Review Seller Applications</a>
+        </div>
+        <div class="footer">
+            <p>This is an automated notification. Please do not reply to this email.</p>
+            <p>&copy; {{ "now"|date:"Y" }} LuxMarket. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

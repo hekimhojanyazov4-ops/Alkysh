@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin Portal - LuxMarket{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'lux': {
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                        }
+                    },
+                    fontFamily: {
+                        display: ['Playfair Display', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script>
+        if (localStorage.getItem('color-theme') === 'dark' ||
+            (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    <style>
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .delay-100 { transition-delay: 0.1s; }
+        .delay-200 { transition-delay: 0.2s; }
+    </style>
+</head>
+<body class="h-full overflow-hidden flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col shadow-2xl z-20 transition-colors duration-300">
+        <div class="p-6 border-b border-slate-800">
+            <span class="text-2xl font-display font-bold tracking-tighter text-blue-400">LUX</span>
+            <span class="text-sm font-light text-slate-400 ml-1 uppercase">Admin</span>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <a href="{% url 'admin_dashboard' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_dashboard' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-grid-1x2-fill"></i> <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="{% url 'admin_seller_management' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_seller_management' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-shop-window"></i> <span class="font-medium">Sellers</span>
+            </a>
+            <a href="{% url 'admin_category_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if 'category' in request.resolver_match.url_name %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-tags"></i> <span class="font-medium">Categories</span>
+            </a>
+            <a href="{% url 'admin_brand_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if 'brand' in request.resolver_match.url_name %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-gem"></i> <span class="font-medium">Brands</span>
+            </a>
+            <a href="{% url 'admin_product_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if 'product' in request.resolver_match.url_name %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-box-seam"></i> <span class="font-medium">Products</span>
+            </a>
+            <a href="{% url 'order_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'order_list' or request.resolver_match.url_name == 'order_detail' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-clipboard2-check"></i> <span class="font-medium">Orders</span>
+            </a>
+            <a href="{% url 'admin_customer_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_customer_list' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-people-fill"></i> <span class="font-medium">Customers</span>
+            </a>
+            <a href="{% url 'admin_payment_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_payment_list' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-wallet2"></i> <span class="font-medium">Payments</span>
+            </a>
+            <div class="pt-4 border-t border-slate-800 mt-4">
+                <a href="{% url 'admin_log_viewer' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all text-slate-400 {% if request.resolver_match.url_name == 'admin_log_viewer' %}bg-slate-800 text-white{% endif %}">
+                    <i class="bi bi-terminal-fill"></i> <span class="text-sm">System Logs</span>
+                </a>
+            </div>
+        </nav>
+        <div class="p-6 border-t border-slate-800">
+            <a href="{% url 'logout' %}" class="flex items-center space-x-3 p-3 text-red-400 hover:bg-red-900/20 rounded-lg">
+                <i class="bi bi-box-arrow-left"></i> <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <header class="h-16 bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex items-center justify-between px-8 transition-colors duration-300">
+            <div class="flex items-center space-x-4">
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-white">{% block header_title %}Overview{% endblock %}</h2>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" class="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <i id="theme-toggle-dark-icon" class="bi bi-moon-stars hidden"></i>
+                    <i id="theme-toggle-light-icon" class="bi bi-sun hidden"></i>
+                </button>
+                <div class="h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
+                <span class="text-sm text-gray-500 dark:text-gray-400">{{ request.user.fullname }}</span>
+                <img src="https://ui-avatars.com/api/?name={{ request.user.fullname }}&background=60a5fa&color=fff" class="w-8 h-8 rounded-full border">
+            </div>
+        </header>
+        
+        <div class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-8 transition-colors duration-300">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-4 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <script>
+        // Theme Toggle Logic
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const darkIcon = document.getElementById('theme-toggle-dark-icon');
+        const lightIcon = document.getElementById('theme-toggle-light-icon');
+
+        function updateIcons() {
+            if (document.documentElement.classList.contains('dark')) {
+                lightIcon.classList.remove('hidden');
+                darkIcon.classList.add('hidden');
+            } else {
+                darkIcon.classList.remove('hidden');
+                lightIcon.classList.add('hidden');
+            }
+        }
+        updateIcons();
+
+        themeToggleBtn.addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('color-theme', isDark ? 'dark' : 'light');
+            updateIcons();
+        });
+
+        // Reveal Animation Logic
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // Global Bulk Selection Helper
+        window.initBulkActions = function(selectAllId, checkboxClass, actionBarId) {
+            const selectAll = document.getElementById(selectAllId);
+            const checkboxes = document.querySelectorAll('.' + checkboxClass);
+            const actionBar = document.getElementById(actionBarId);
+            const countDisplay = actionBar ? actionBar.querySelector('#selected-count') : null;
+            const summaryDisplay = actionBar ? actionBar.querySelector('#bulk-summary-content') : null;
+
+            if (!selectAll || !actionBar) return;
+
+            const fetchSummary = async (ids) => {
+                if (ids.length === 0 || !summaryDisplay) return;
+                
+                try {
+                    const response = await fetch(`/admin-panel/api/bulk-summary/?ids=${ids.join(',')}`);
+                    const data = await response.json();
+                    
+                    let html = '<div class="flex gap-6 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">';
+                    
+                    if (data.categories.length > 0) {
+                        html += '<div><span class="text-[10px] font-bold text-gray-400 uppercase">Categories:</span><div class="flex flex-wrap gap-2 mt-1">';
+                        data.categories.forEach(c => {
+                            html += `<span class="px-2 py-0.5 bg-lux-50 dark:bg-lux-900/30 text-lux-600 rounded text-[10px] font-bold">${c.name} (${c.count})</span>`;
+                        });
+                        html += '</div></div>';
+                    }
+
+                    if (data.brands.length > 0) {
+                        html += '<div><span class="text-[10px] font-bold text-gray-400 uppercase">Brands:</span><div class="flex flex-wrap gap-2 mt-1">';
+                        data.brands.forEach(b => {
+                            html += `<span class="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded text-[10px] font-bold">${b.name} (${b.count})</span>`;
+                        });
+                        html += '</div></div>';
+                    }
+                    
+                    html += '</div>';
+                    summaryDisplay.innerHTML = html;
+                } catch (err) {
+                    console.error('Error fetching bulk summary:', err);
+                }
+            };
+
+            const updateBar = () => {
+                const checkedBoxes = Array.from(document.querySelectorAll('.' + checkboxClass + ':checked'));
+                const ids = checkedBoxes.map(cb => cb.value);
+                const checkedCount = checkedBoxes.length;
+                
+                // Toggle visibility of the bulk action bar
+                actionBar.classList.toggle('hidden', checkedCount === 0);
+                
+                // Update the selection counter text if available
+                if (countDisplay) countDisplay.textContent = checkedCount;
+
+                // Sync the "Select All" checkbox state
+                selectAll.checked = checkedCount === checkboxes.length && checkboxes.length > 0;
+                selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+
+                // Fetch dynamic summary from API
+                if (checkedCount > 0) {
+                    fetchSummary(ids);
+                }
+            };
+
+            selectAll.addEventListener('change', (e) => {
+                checkboxes.forEach(cb => cb.checked = e.target.checked);
+                updateBar();
+            });
+
+            checkboxes.forEach(cb => cb.addEventListener('change', updateBar));
+        };
+    </script>
+</body>
+</html>

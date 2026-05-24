@@ -1,0 +1,42 @@
+{% extends "base_admin.html" %}
+
+{% block title %}System Logs - Admin Portal{% endblock %}
+{% block header_title %}Stripe Error Logs{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">System Logs</h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Monitoring: <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{{ log_filename }}</code></p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{% url 'admin_dashboard' %}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700">
+                Back to Dashboard
+            </a>
+            <button onclick="window.location.reload()" class="px-4 py-2 text-sm font-medium text-white bg-lux-600 rounded-lg hover:bg-lux-700 transition-colors">
+                Refresh Logs
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-gray-900 rounded-xl shadow-2xl overflow-hidden border border-gray-800">
+        <div class="flex items-center space-x-2 px-4 py-2 bg-gray-800 border-b border-gray-700">
+            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            <span class="ml-2 text-xs font-mono text-gray-400">terminal — stripe_errors.log</span>
+        </div>
+        
+        <div class="p-6 overflow-x-auto">
+            <pre class="font-mono text-sm text-green-400 whitespace-pre-wrap">
+{% for line in logs %}
+<span class="text-gray-500 select-none">{{ forloop.revcounter }}</span>  {{ line|linebreaksbr }}
+{% empty %}
+<span class="text-gray-500">No log entries found.</span>
+{% endfor %}
+            </pre>
+        </div>
+    </div>
+</div>
+{% endblock %}

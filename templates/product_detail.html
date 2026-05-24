@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6 md:py-12">
+    <!-- Esasy haryt bölümi (üýtgedilmedi) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-10 reveal">
+        <!-- Image gallery with zoom -->
+        <div class="relative">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden">
+                <img id="mainImage" src="{{ product.images.first.image.url|default:'https://via.placeholder.com/600' }}"
+                     class="w-full aspect-square md:h-[500px] object-cover cursor-zoom-in transition-transform duration-300"
+                     data-zoom="{{ product.images.first.image.url }}">
+            </div>
+            <div class="flex gap-3 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+                {% for img in product.images.all %}
+                <div class="shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 border-transparent hover:border-lux-400 cursor-pointer transition-colors"
+                     onclick="document.getElementById('mainImage').src='{{ img.image.url }}'">
+                    <img src="{{ img.image.url }}" class="w-full h-full object-cover">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div>
+            <p class="text-lux-600 font-medium">{{ product.category.name }}</p>
+            <h1 class="font-display text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ product.name }}</h1>
+            <div class="flex items-baseline gap-3 mt-6">
+                {% if product.discount_price is not None %}
+                    <span class="text-4xl font-bold text-lux-600">${{ product.discount_price }}</span>
+                    <span class="text-lg text-gray-400 line-through">${{ product.price }}</span>
+                    <span class="ml-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-3 py-1 rounded-full text-sm font-medium">Save ${{ savings }}</span>
+                {% else %}
+                    <span class="text-4xl font-bold text-gray-800 dark:text-gray-100">${{ product.price }}</span>
+                {% endif %}
+            </div>
+            <p class="text-gray-600 dark:text-gray-400 mt-6 leading-relaxed">{{ product.description }}</p>
+            <div class="border-t border-gray-200 dark:border-gray-700 mt-8 pt-6">
+                {% if product.available %}
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex items-center border border-gray-300 dark:border-gray-600 rounded-full shrink-0">
+                            <button class="px-3 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-l-full" onclick="changeQty(-1)">−</button>
+                            <input id="qtyInput" type="text" value="1" class="w-12 text-center font-semibold focus:outline-none dark:bg-transparent dark:text-white" readonly>
+                            <button class="px-3 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-r-full" onclick="changeQty(1)">+</button>
+                        </div>
+                        <button id="addToCartBtn" data-product-id="{{ product.id }}" class="flex-1 min-w-[160px] bg-lux-600 hover:bg-lux-700 text-white py-3 px-8 rounded-full font-medium transition-all shadow-lg hover:shadow-xl flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-2 inline shrink-0">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                            </svg>
+                            Add to Cart
+                        </button>
+                        <button id="favoriteBtn" data-product-id="{{ product.id }}" 
+                                class="p-3 rounded-full border {% if is_favorite %}bg-red-50 border-red-200 text-red-500{% else %}border-gray-200 text-gray-400{% endif %} hover:scale-110 transition-all shadow-md">
+                            <i class="bi {% if is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %} text-2xl"></i>
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="text-red-500 font-semibold">Out of stock</div>
+                {% endif %}
+            </div>
+            <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">Sold by <span class="font-medium text-gray-700 dark:text-gray-300">{{ product.seller.fullname }}</span></div>
+        </div>
+    </div>
+
+    <!-- ========== Täze bölüm: Degişli harytlar (Related Products) ========== -->
+    {% if related_products %}
+    <section class="mt-16 reveal">
+        <h2 class="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-white mb-6">
+            Related Products
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {% for rp in related_products %}
+            <a href="{% url 'product_detail' rp.uuid %}" class="group block bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden hover:shadow-xl transition-all">
+                <div class="aspect-square overflow-hidden">
+                    <img src="{{ rp.images.first.image.url|default:'https://via.placeholder.com/400' }}" 
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                         alt="{{ rp.name }}">
+                </div>
+                <div class="p-4">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ rp.brand.name|default:'' }}</p>
+                    <h3 class="font-semibold text-gray-800 dark:text-white truncate">{{ rp.name }}</h3>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        {% if rp.discount_price %}
+                            <span class="text-lg font-bold text-lux-600">${{ rp.discount_price }}</span>
+                            <span class="text-xs text-gray-400 line-through">${{ rp.price }}</span>
+                        {% else %}
+                            <span class="text-lg font-bold text-gray-800 dark:text-gray-100">${{ rp.price }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ========== Täze bölüm: Soňky görlenler (Recently Viewed) ========== -->
+    {% if recently_viewed %}
+    <section class="mt-12 reveal">
+        <h2 class="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-white mb-6">
+            Recently Viewed
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-6">
+            {% for rv in recently_viewed %}
+            <a href="{% url 'product_detail' rv.uuid %}" class="group block bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden hover:shadow-xl transition-all">
+                <div class="aspect-square overflow-hidden">
+                    <img src="{{ rv.images.first.image.url|default:'https://via.placeholder.com/400' }}" 
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                         alt="{{ rv.name }}">
+                </div>
+                <div class="p-4">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ rv.brand.name|default:'' }}</p>
+                    <h3 class="font-semibold text-gray-800 dark:text-white truncate">{{ rv.name }}</h3>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        {% if rv.discount_price %}
+                            <span class="text-lg font-bold text-lux-600">${{ rv.discount_price }}</span>
+                            <span class="text-xs text-gray-400 line-through">${{ rv.price }}</span>
+                        {% else %}
+                            <span class="text-lg font-bold text-gray-800 dark:text-gray-100">${{ rv.price }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function changeQty(delta) {
+        const input = document.getElementById('qtyInput');
+        let val = parseInt(input.value) || 1;
+        val = val + delta;
+        if (val < 1) val = 1;
+        input.value = val;
+    }
+
+    document.getElementById('addToCartBtn')?.addEventListener('click', async function() {
+        const id = this.dataset.productId;
+        const qty = parseInt(document.getElementById('qtyInput').value);
+        const res = await ajaxPost(`/add-to-cart/${id}/`, { quantity: qty });
+        if (res.success) {
+            updateCartCount(res.cart_count);
+            showToast(`${qty} x added to cart`);
+        } else {
+            showToast('Failed', 'error');
+        }
+    });
+
+    document.getElementById('favoriteBtn')?.addEventListener('click', async function() {
+        const id = this.dataset.productId;
+        const res = await ajaxPost(`/favorites/toggle/${id}/`);
+        if (res.success) {
+            const icon = this.querySelector('i');
+            if (res.is_favorite) {
+                this.classList.replace('text-gray-400', 'text-red-500');
+                this.classList.add('bg-red-50', 'border-red-200');
+                icon.classList.replace('bi-heart', 'bi-heart-fill');
+            } else {
+                this.classList.replace('text-red-500', 'text-gray-400');
+                this.classList.remove('bg-red-50', 'border-red-200');
+                icon.classList.replace('bi-heart-fill', 'bi-heart');
+            }
+            showToast(res.message);
+        }
+    });
+
+    // Image zoom effect
+    const mainImg = document.getElementById('mainImage');
+    mainImg?.addEventListener('mousemove', (e) => {
+        const { left, top, width, height } = mainImg.getBoundingClientRect();
+        const x = ((e.clientX - left) / width) * 100;
+        const y = ((e.clientY - top) / height) * 100;
+        mainImg.style.transformOrigin = `${x}% ${y}%`;
+        mainImg.style.transform = 'scale(1.8)';
+    });
+    mainImg?.addEventListener('mouseleave', () => {
+        mainImg.style.transform = 'scale(1)';
+    });
+</script>
+{% endblock %}

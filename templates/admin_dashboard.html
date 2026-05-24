@@ -1,0 +1,280 @@
+{% extends 'base_admin.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block header_title %}System Overview{% endblock %}
+
+{% block extra_head %}
+<!-- Font Awesome 6 (if not already included) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-10">
+        <h2 class="font-display text-4xl font-bold text-gray-800 dark:text-white">
+            <i class="fas fa-tachometer-alt mr-3 text-lux-600"></i>Admin Dashboard
+        </h2>
+        <div class="text-sm text-gray-500 dark:text-gray-400">Platform Overview</div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 reveal">
+        <!-- Total Revenue -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lux border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow">
+            <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Total Revenue</p>
+                <i class="fas fa-dollar-sign text-2xl text-lux-600/80"></i>
+            </div>
+            <h3 class="text-3xl font-bold text-lux-600 mt-2">${{ total_revenue }}</h3>
+        </div>
+
+        <!-- Total Orders -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lux border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow">
+            <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Total Orders</p>
+                <i class="fas fa-shopping-bag text-2xl text-blue-600/80"></i>
+            </div>
+            <h3 class="text-3xl font-bold text-gray-800 dark:text-white mt-2">{{ total_orders }}</h3>
+        </div>
+
+        <!-- Total Customers -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lux border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow">
+            <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Total Customers</p>
+                <i class="fas fa-users text-2xl text-purple-600/80"></i>
+            </div>
+            <h3 class="text-3xl font-bold text-gray-800 dark:text-white mt-2">{{ total_customers }}</h3>
+        </div>
+
+        <!-- Active Sellers -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lux border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow">
+            <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Active Sellers</p>
+                <i class="fas fa-store text-2xl text-amber-600/80"></i>
+            </div>
+            <div class="flex items-baseline gap-2 mt-2">
+                <h3 class="text-3xl font-bold text-gray-800 dark:text-white">{{ total_sellers }}</h3>
+                <span class="text-sm text-lux-600 font-medium">({{ pending_sellers_count }} pending)</span>
+            </div>
+            <a href="{% url 'admin_seller_management' %}" class="text-xs font-semibold text-lux-600 hover:underline mt-3 inline-block">
+                <i class="fas fa-arrow-right mr-1"></i>Manage Applications &rarr;
+            </a>
+        </div>
+    </div>
+
+    <!-- Row 1: Revenue Trend + Top Sellers -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10 reveal delay-100">
+        <!-- Global Revenue Trend -->
+        <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lux border border-gray-100 dark:border-gray-700">
+            <h3 class="text-lg font-semibold mb-6 dark:text-white">
+                <i class="fas fa-chart-line mr-2 text-lux-600"></i>Revenue Growth (Last 30 Days)
+            </h3>
+            <div id="adminSalesChart" class="w-full"></div>
+        </div>
+
+        <!-- Top Sellers -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lux border border-gray-100 dark:border-gray-700 reveal delay-200">
+            <h3 class="text-lg font-semibold mb-6 dark:text-white">
+                <i class="fas fa-trophy mr-2 text-amber-500"></i>Top Sellers
+            </h3>
+            <div class="space-y-4">
+                {% for seller in top_sellers %}
+                <div class="flex items-center justify-between py-3 border-b dark:border-gray-700 last:border-0">
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold text-gray-900 dark:text-white truncate">{{ seller.fullname }}</p>
+                        <p class="text-xs text-gray-500">{{ seller.email }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-bold text-lux-600">${{ seller.revenue|floatformat:2|default:"0.00" }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center text-gray-500 py-10">No seller data available.</p>
+                {% endfor %}
+            </div>
+            <div class="mt-6 space-y-2">
+                <a href="{% url 'admin_seller_management' %}" class="text-xs font-semibold text-lux-600 hover:text-lux-700 uppercase block">
+                    <i class="fas fa-user-check mr-1"></i>Seller Applications &rarr;
+                </a>
+                <a href="/admin/products/user/" class="text-xs font-semibold text-lux-600 hover:text-lux-700 uppercase block">
+                    <i class="fas fa-users-cog mr-1"></i>Manage All Users &rarr;
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Order Progress Chart + Escrow -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 reveal delay-300">
+        <!-- Order Progress Donut -->
+        <div class="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lux border border-gray-100 dark:border-gray-700">
+            <h3 class="text-lg font-semibold mb-6 dark:text-white">
+                <i class="fas fa-truck-fast mr-2 text-green-600"></i>Order Progress
+            </h3>
+            <div id="orderProgressChart" class="w-full" style="min-height: 250px;"></div>
+        </div>
+
+        <!-- Escrow & Pending Funds -->
+        <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lux border border-gray-100 dark:border-gray-700">
+            <h3 class="text-lg font-semibold mb-6 dark:text-white">
+                <i class="fas fa-lock mr-2 text-amber-600"></i>Escrow & Pending Funds
+            </h3>
+            <div class="flex flex-col sm:flex-row items-start sm:items-baseline gap-4 sm:gap-8">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-check-circle text-2xl text-green-600"></i>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Available for Withdrawal</p>
+                        <p class="text-3xl font-bold text-green-600">${{ total_revenue }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 border-l-0 sm:border-l dark:border-gray-600 pl-0 sm:pl-8">
+                    <i class="fas fa-hourglass-half text-2xl text-amber-600"></i>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Held in Escrow</p>
+                        <p class="text-3xl font-bold text-amber-600">${{ escrow_funds }}</p>
+                    </div>
+                </div>
+            </div>
+            <p class="mt-6 text-xs text-gray-400 dark:text-gray-500">
+                <i class="fas fa-info-circle mr-1"></i>Funds are released to sellers when orders are marked as Delivered.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const isDark = document.documentElement.classList.contains('dark');
+
+        // ===================== Revenue Line Chart =====================
+        const revenueOptions = {
+            series: [{
+                name: 'Global Revenue',
+                data: {{ chart_data|safe }}
+            }],
+            chart: {
+                type: 'line',
+                height: 350,
+                toolbar: { show: false },
+                background: 'transparent'
+            },
+            colors: ['#8b5cf6'],
+            stroke: { curve: 'smooth', width: 3 },
+            xaxis: {
+                categories: {{ chart_labels|safe }},
+                labels: {
+                    style: { colors: isDark ? '#94a3b8' : '#64748b' }
+                }
+            },
+            yaxis: {
+                labels: {
+                    style: { colors: isDark ? '#94a3b8' : '#64748b' },
+                    formatter: (value) => "$" + value
+                }
+            },
+            grid: {
+                borderColor: isDark ? '#334155' : '#e2e8f0',
+                strokeDashArray: 4
+            },
+            theme: {
+                mode: isDark ? 'dark' : 'light'
+            },
+            tooltip: {
+                theme: isDark ? 'dark' : 'light'
+            }
+        };
+
+        const revenueChart = new ApexCharts(document.querySelector("#adminSalesChart"), revenueOptions);
+        revenueChart.render();
+
+        // ===================== Order Progress Donut Chart =====================
+        const progressLabels = {{ progress_labels|safe }};
+        const progressData = {{ progress_data|safe }};
+
+        const progressOptions = {
+            series: progressData,
+            chart: {
+                type: 'donut',
+                height: 300,
+                toolbar: { show: false },
+                background: 'transparent',
+                foreColor: isDark ? '#94a3b8' : '#475569',
+            },
+            labels: progressLabels,
+            colors: ['#f59e0b', '#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#ef4444'],
+            stroke: {
+                width: 2,
+                colors: [isDark ? '#1e293b' : '#ffffff']
+            },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '65%',
+                        labels: {
+                            show: true,
+                            total: {
+                                show: true,
+                                label: 'Total Orders',
+                                formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b, 0)
+                            }
+                        }
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: false
+            },
+            legend: {
+                position: 'bottom',
+                labels: {
+                    colors: isDark ? '#cbd5e1' : '#334155',
+                    useSeriesColors: false
+                }
+            },
+            tooltip: {
+                theme: isDark ? 'dark' : 'light',
+                y: {
+                    formatter: (val) => val + ' orders'
+                }
+            }
+        };
+
+        const progressChart = new ApexCharts(document.querySelector("#orderProgressChart"), progressOptions);
+        progressChart.render();
+
+        // ===================== Shared Theme Observer =====================
+        const themeObserver = new MutationObserver(() => {
+            const currentIsDark = document.documentElement.classList.contains('dark');
+            const commonTheme = {
+                theme: { mode: currentIsDark ? 'dark' : 'light' },
+                grid: { borderColor: currentIsDark ? '#334155' : '#e2e8f0' },
+            };
+
+            // Update revenue chart
+            revenueChart.updateOptions({
+                ...commonTheme,
+                xaxis: {
+                    labels: { style: { colors: currentIsDark ? '#94a3b8' : '#64748b' } }
+                },
+                yaxis: {
+                    labels: { style: { colors: currentIsDark ? '#94a3b8' : '#64748b' } }
+                }
+            });
+
+            // Update progress chart
+            progressChart.updateOptions({
+                ...commonTheme,
+                stroke: {
+                    colors: [currentIsDark ? '#1e293b' : '#ffffff']
+                },
+                legend: {
+                    labels: { colors: currentIsDark ? '#cbd5e1' : '#334155' }
+                }
+            });
+        });
+
+        themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    });
+</script>
+{% endblock %}

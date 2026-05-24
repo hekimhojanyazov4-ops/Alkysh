@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Login - LuxMarket{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-20 px-4 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-black">
+    <div class="max-w-md w-full bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden reveal">
+        <!-- Header -->
+        <div class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700 px-6 py-8 md:px-8 text-center">
+            <h2 class="font-display text-3xl font-bold text-gray-900 dark:text-white mt-2">Welcome Back</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Sign in to your account to continue</p>
+        </div>
+
+        <!-- Form -->
+        <div class="p-8">
+            <form method="post" novalidate id="login-form">
+                {% csrf_token %}
+                {% if next %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                {% endif %}
+
+                <!-- Email field -->
+                <div class="mb-5">
+                    <label for="id_username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Email address
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                            </svg>
+                        </div>
+                        <input
+                            type="email"
+                            name="username"
+                            id="id_username"
+                            value="{{ form.username.value|default_if_none:'' }}"
+                            class="w-full pl-10 pr-4 py-3 border {% if form.username.errors %}border-red-400 dark:border-red-500{% else %}border-gray-200 dark:border-gray-700{% endif %} dark:bg-gray-900 dark:text-white dark:placeholder-gray-500 rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors"
+                            placeholder="you@example.com"
+                            required
+                            autocomplete="email"
+                            aria-describedby="{% if form.username.errors %}username-errors{% endif %}"
+                        >
+                    </div>
+                    {% if form.username.errors %}
+                        <div id="username-errors" class="mt-1 text-sm text-red-500 dark:text-red-400" role="alert">
+                            {% for error in form.username.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Password field -->
+                <div class="mb-6">
+                    <label for="id_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Password
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.812 0a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5h10.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5h-10.5Z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="password"
+                            name="password"
+                            id="id_password"
+                            class="w-full pl-10 pr-10 py-3 border {% if form.password.errors %}border-red-400 dark:border-red-500{% else %}border-gray-200 dark:border-gray-700{% endif %} dark:bg-gray-900 dark:text-white dark:placeholder-gray-500 rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors"
+                            placeholder="••••••••"
+                            required
+                            autocomplete="current-password"
+                            aria-describedby="{% if form.password.errors %}password-errors{% endif %}"
+                        >
+                        <button
+                            type="button"
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-lux-600 transition-colors"
+                            aria-label="Toggle password visibility"
+                            data-toggle-password="id_password"
+                        >
+                            <!-- Eye icon (visible state) -->
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 password-eye-open">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            </svg>
+                            <!-- Eye-off icon (hidden by default) -->
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 hidden password-eye-closed">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.477 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.243 4.243L9.878 9.878" />
+                            </svg>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                        <div id="password-errors" class="mt-1 text-sm text-red-500 dark:text-red-400" role="alert">
+                            {% for error in form.password.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Remember me & Forgot password -->
+                <div class="flex items-center justify-between mb-6">
+                    <label class="flex items-center text-sm text-gray-600 dark:text-gray-400 cursor-pointer" for="id_remember_me">
+                        <input
+                            type="checkbox"
+                            name="remember_me"
+                            id="id_remember_me"
+                            class="w-4 h-4 rounded text-lux-600 focus:ring-lux-500 border-gray-300 dark:border-gray-700 dark:bg-gray-900 mr-2"
+                        >
+                        Remember me
+                    </label>
+                    <a href="#" class="text-sm font-medium text-lux-600 hover:text-lux-700 transition-colors">
+                        Forgot password?
+                    </a>
+                </div>
+
+                <!-- Non-field errors -->
+                {% if form.non_field_errors %}
+                    <div class="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800" role="alert">
+                        {% for error in form.non_field_errors %}
+                            <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Submit button with loading state -->
+                <button
+                    type="submit"
+                    id="login-submit"
+                    class="w-full bg-lux-600 text-white py-3 rounded-xl font-semibold hover:bg-lux-700 transition-colors shadow-lg flex items-center justify-center gap-2"
+                >
+                    <span id="login-text">Sign In</span>
+                    <svg id="login-spinner" class="hidden w-5 h-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </button>
+            </form>
+
+            <!-- Register link -->
+            <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+                Don't have an account? <a href="{% url 'register' %}" class="text-lux-600 font-semibold">Register</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function() {
+        // Toggle password visibility
+        const toggleButtons = document.querySelectorAll('[data-toggle-password]');
+        toggleButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const inputId = this.getAttribute('data-toggle-password');
+                const input = document.getElementById(inputId);
+                const openEye = this.querySelector('.password-eye-open');
+                const closedEye = this.querySelector('.password-eye-closed');
+                
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    openEye.classList.add('hidden');
+                    closedEye.classList.remove('hidden');
+                } else {
+                    input.type = 'password';
+                    openEye.classList.remove('hidden');
+                    closedEye.classList.add('hidden');
+                }
+            });
+        });
+
+        // Form submission loading state
+        const form = document.getElementById('login-form');
+        const submitBtn = document.getElementById('login-submit');
+        const submitText = document.getElementById('login-text');
+        const spinner = document.getElementById('login-spinner');
+
+        form.addEventListener('submit', function() {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            submitText.textContent = 'Signing in...';
+            spinner.classList.remove('hidden');
+        });
+    })();
+</script>
+{% endblock %}

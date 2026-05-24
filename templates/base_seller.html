@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Seller Dashboard - LuxMarket{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'lux': {
+                            DEFAULT: '#c5a059',
+                            600: '#c5a059',
+                            700: '#b38f4d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .bg-lux {
+            background-color: #c5a059;
+        }
+        .text-lux {
+            color: #c5a059;
+        }
+
+        /* Soft Animation Styles */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .delay-100 {
+            transition-delay: 0.1s;
+        }
+        .delay-200 {
+            transition-delay: 0.2s;
+        }
+        .delay-300 {
+            transition-delay: 0.3s;
+        }
+        .delay-400 {
+            transition-delay: 0.4s;
+        }
+
+        .hover-scale {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .hover-scale:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        aside a {
+            transition: all 0.2s ease;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full flex dark:bg-gray-900 transition-colors duration-500">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex-shrink-0 flex flex-col z-30 transition-colors duration-500">
+        <div class="p-6 border-b border-gray-100 dark:border-gray-700">
+            <h1 class="text-2xl font-serif text-gray-900 dark:text-white">LuxMarket</h1>
+            <p class="text-[10px] uppercase tracking-widest text-lux font-bold">Partner Portal</p>
+        </div>
+        <nav class="flex-1 p-4 space-y-1">
+            <a href="{% url 'seller_dashboard' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-all">
+                <i class="bi bi-grid-1x2 text-lux"></i> <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="{% url 'seller_product_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-all">
+                <i class="bi bi-box-seam text-lux"></i> <span class="font-medium">My Inventory</span>
+            </a>
+            <a href="{% url 'seller_product_add' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-all">
+                <i class="bi bi-plus-circle text-lux"></i> <span class="font-medium">Add Product</span>
+            </a>
+            <a href="{% url 'order_list' %}" class="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-all group">
+                <div class="flex items-center space-x-3">
+                    <i class="bi bi-receipt text-lux"></i> <span class="font-medium">Orders</span>
+                </div>
+                <span id="order-badge" class="hidden bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
+            </a>
+        </nav>
+        <div class="p-4 border-t border-stone-200 dark:border-gray-700">
+            <a href="{% url 'home' %}" class="flex items-center space-x-3 p-3 text-sm text-stone-500 dark:text-gray-400 hover:text-lux-700 dark:hover:text-white transition-colors">
+                <i class="bi bi-arrow-left"></i> <span>Back to Site</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <header class="h-16 bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex items-center justify-between px-8 transition-colors duration-500">
+            <div class="text-sm dark:text-gray-300">
+                <span class="text-gray-400">Account:</span>
+                <span class="font-semibold text-gray-900 dark:text-white ml-1">{{ request.user.fullname }}</span>
+            </div>
+            <div class="flex items-center space-x-4">
+            <a href="{% url 'seller_product_add' %}" class="flex items-center gap-2 bg-lux-600 hover:bg-lux-700 text-white text-xs px-4 py-1.5 rounded-full font-bold transition-all shadow-sm hover:shadow-md">
+                <i class="bi bi-plus-lg"></i> ADD PRODUCT
+            </a>
+            <a href="{% url 'export_sales_csv' %}" class="text-xs bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                EXPORT REPORT
+            </a>
+        </div>
+    </header>
+    <main class="flex-1 overflow-y-auto p-8 dark:bg-gray-900 transition-colors duration-500">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="mb-6 p-4 rounded-xl bg-gray-900 text-white flex justify-between message-alert">
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<!-- Notification Sound -->
+<audio id="notification-sound" preload="auto">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // ─────────────────────────────────────────────
+        // Reveal animations
+        // ─────────────────────────────────────────────
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // ─────────────────────────────────────────────
+        // Soft fade for messages
+        // ─────────────────────────────────────────────
+        document.querySelectorAll('.message-alert').forEach(el => {
+            setTimeout(() => {
+                el.style.transition = 'opacity 0.5s ease';
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 500);
+            }, 4000);
+        });
+
+        // ─────────────────────────────────────────────
+        // Real-time order notification badge
+        // ─────────────────────────────────────────────
+        {% if user.is_authenticated and user.role == 'SELLER' %}
+        let lastOrderCount = null;
+
+        function updateOrderBadge() {
+            fetch('{% url "api_seller_new_orders_count" %}')
+                .then(res => res.json())
+                .then(data => {
+                    const badge = document.getElementById('order-badge');
+                    const notificationSound = document.getElementById('notification-sound');
+                    if (lastOrderCount !== null && data.count > lastOrderCount) {
+                        notificationSound?.play().catch(err => console.log('Audio playback blocked until user interaction.'));
+                    }
+                    lastOrderCount = data.count;
+                    if (badge) {
+                        if (data.count > 0) {
+                            badge.textContent = data.count;
+                            badge.classList.remove('hidden');
+                        } else {
+                            badge.classList.add('hidden');
+                        }
+                    }
+                });
+        }
+        setInterval(updateOrderBadge, 30000);
+        updateOrderBadge();
+        {% endif %}
+    });
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

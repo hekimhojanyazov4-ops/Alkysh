@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}Your Cart{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-12">
+    <h2 class="font-display text-4xl font-bold text-gray-800 dark:text-white mb-10">Shopping Cart</h2>
+    {% if items %}
+    <div class="flex flex-col lg:flex-row gap-8 reveal">
+        <div class="lg:w-2/3">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden">
+                {% for item in items %}
+                <div class="cart-item-row flex items-center gap-4 p-5 border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <img src="{{ item.product.images.first.image.url|default:'https://via.placeholder.com/80' }}" class="w-20 h-20 rounded-xl object-cover shadow-md">
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-800 dark:text-white">{{ item.product.name }}</h4>
+                        <div class="flex items-center gap-2 text-sm mt-1">
+                            {% if item.product.discount_price is not None %}
+                                <span class="text-lux-600 font-bold">${{ item.product.discount_price }}</span>
+                                <span class="text-gray-400 line-through text-xs">${{ item.product.price }}</span>
+                            {% else %}
+                                <span class="font-bold text-gray-700 dark:text-gray-300">${{ item.product.price }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button class="dec-btn w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" data-item-id="{{ item.id }}">−</button>
+                        <span class="qty-display w-8 text-center font-semibold dark:text-white" data-item-id="{{ item.id }}">{{ item.quantity }}</span>
+                        <button class="inc-btn w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" data-item-id="{{ item.id }}">+</button>
+                    </div>
+                    <div class="w-24 text-right font-semibold text-gray-700 dark:text-gray-300" data-item-subtotal="{{ item.id }}">${{ item.line_total }}</div>
+                    <button class="remove-btn text-gray-400 hover:text-red-500 transition-colors ml-2" data-item-id="{{ item.id }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                        </svg>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="lg:w-1/3">
+            <div class="glass rounded-2xl p-6 sticky top-24">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Cart Summary</h3>
+                <div class="flex justify-between text-lg font-bold border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <span>Total</span>
+                    <span id="cart-total">${{ total }}</span>
+                </div>
+                <a href="{% url 'checkout' %}" class="mt-6 block w-full bg-lux-600 text-white text-center py-3 rounded-xl font-medium hover:bg-lux-700 transition-colors shadow-md">
+                    Proceed to Checkout
+                </a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-20">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" class="w-20 h-20 mx-auto text-gray-300">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+        </svg>
+        <h3 class="text-2xl font-semibold text-gray-600 dark:text-gray-400 mt-4">Your cart is empty</h3>
+        <a href="{% url 'home' %}" class="mt-6 inline-block bg-lux-600 text-white px-8 py-3 rounded-xl font-medium">Start Shopping</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Quantity update
+    document.querySelectorAll('.dec-btn, .inc-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const itemId = btn.dataset.itemId;
+            const qtyEl = document.querySelector(`.qty-display[data-item-id="${itemId}"]`);
+            let qty = parseInt(qtyEl.textContent) || 1;
+            if (btn.classList.contains('dec-btn') && qty > 1) qty--;
+            else if (btn.classList.contains('inc-btn')) qty++;
+
+            const res = await ajaxPost(`/cart/update/${itemId}/`, { quantity: qty });
+            if (res.success) {
+                qtyEl.textContent = qty;
+                document.querySelector(`[data-item-subtotal="${itemId}"]`).textContent = '$' + res.line_total;
+                document.getElementById('cart-total').textContent = '$' + res.cart_total;
+                updateCartCount(res.cart_count);
+            } else {
+                showToast('Update failed', 'error');
+            }
+        });
+    });
+
+    // Remove item
+    document.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if (!confirm('Remove item?')) return;
+            const itemId = btn.dataset.itemId;
+            const row = btn.closest('.cart-item-row');
+            row.style.opacity = '0.5';
+            const res = await ajaxPost(`/cart/remove/${itemId}/`);
+            if (res.success) {
+                row.style.transition = 'all 0.3s';
+                row.style.opacity = '0';
+                setTimeout(() => row.remove(), 300);
+                updateCartCount(res.cart_count);
+                document.getElementById('cart-total').textContent = '$' + res.cart_total;
+                showToast(res.message);
+                if (document.querySelectorAll('.cart-item-row').length === 0) location.reload();
+            } else {
+                row.style.opacity = '1';
+                showToast('Error', 'error');
+            }
+        });
+    });
+</script>
+{% endblock %}
