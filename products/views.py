@@ -34,6 +34,7 @@ from .forms import (
     ProductForm, ProductImageFormSet,
     CartItemUpdateForm,
     CustomAuthenticationForm,
+    ReviewForm,
 )
 from .models import (
     Category, Brand,
@@ -46,6 +47,7 @@ from .models import (
     Favorite,
     Payment,
     User,
+    Review,
 )
 
 logger = logging.getLogger(__name__)
@@ -177,7 +179,8 @@ def home(request):
     # 2. Base product queryset
     products = Product.objects.filter(available=True)\
         .select_related('category', 'brand', 'seller')\
-        .prefetch_related('images')
+        .prefetch_related('images')\
+        .annotate(review_count=Count('reviews'))
 
     # Seller filter
     if request.user.role == User.Role.SELLER:
@@ -666,13 +669,25 @@ def product_detail(request, uuid):
         product_qs = product_qs.filter(seller=request.user)
     product = get_object_or_404(product_qs, uuid=uuid, available=True)
 
+    # Increment database view count safely
+    Product.objects.filter(id=product.id).update(view_count=models.F('view_count') + 1)
+    product.refresh_from_db()
+
     effective_price = product.discount_price or product.price
     savings = product.price - product.discount_price if product.discount_price else 0
+
+    reviews = product.reviews.select_related('user').all()
+    avg_rating = reviews.aggregate(models.Avg('rating'))['rating__avg'] or 0
+    review_form = ReviewForm()
 
     # Degişli harytlar (düzedilen setir)
     related_products = Product.objects.filter(
         category=product.category, available=True
-    ).exclude(id=product.id).select_related('brand').prefetch_related('images').order_by('-created')[:4]
+    ).exclude(id=product.id)\
+    .select_related('brand')\
+    .prefetch_related('images')\
+    .annotate(review_count=Count('reviews'))\
+    .order_by('-created')[:4]
 
     # Soňky görlenler (üýtgedilmedi)
     recently_viewed_uuids = request.session.get('recently_viewed', [])
@@ -687,7 +702,10 @@ def product_detail(request, uuid):
     if viewed_ids:
         products_map = Product.objects.filter(
             uuid__in=viewed_ids, available=True
-        ).select_related('brand').prefetch_related('images').in_bulk(field_name='uuid')
+        ).select_related('brand')\
+        .prefetch_related('images')\
+        .annotate(review_count=Count('reviews'))\
+        .in_bulk(field_name='uuid')
         recently_viewed = []
         for uid in viewed_ids:
             try:
@@ -711,8 +729,31 @@ def product_detail(request, uuid):
         'effective_price': effective_price,
         'savings': savings,
         'is_favorite': is_favorite,
+        'reviews': reviews,
+        'avg_rating': avg_rating,
+        'review_form': review_form,
     }
     return render(request, 'product_detail.html', context)
+
+
+@login_required
+@customer_required
+def add_review(request, product_id):
+    if request.method == 'POST':
+        product = get_object_or_404(Product, id=product_id, available=True)
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            # Check if user already reviewed this product
+            if Review.objects.filter(product=product, user=request.user).exists():
+                messages.warning(request, "You have already reviewed this product.")
+            else:
+                review = form.save(commit=False)
+                review.product = product
+                review.user = request.user
+                review.save()
+                messages.success(request, 'Your review has been submitted.')
+        return redirect('product_detail', uuid=product.uuid)
+    return redirect('home')
 
 
 @login_required
@@ -762,7 +803,10 @@ def add_to_cart(request, product_id):
 
 
 def api_product_detail(request, uuid):
-    product = get_object_or_404(Product.objects.prefetch_related('images'), uuid=uuid, available=True)
+    product = get_object_or_404(
+        Product.objects.annotate(review_count=Count('reviews')).prefetch_related('images'),
+        uuid=uuid, available=True
+    )
     data = {
         'name': product.name,
         'category': product.category.name,
@@ -771,7 +815,8 @@ def api_product_detail(request, uuid):
         'effective_price': str(product.effective_price),
         'description': product.description,
         'images': [img.image.url for img in product.images.all()],
-        'id': product.id
+        'id': product.id,
+        'review_count': product.review_count
     }
     return JsonResponse(data)
 

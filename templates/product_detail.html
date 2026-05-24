@@ -3,24 +3,31 @@
 
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 py-6 md:py-12">
-    <!-- Esasy haryt bölümi (üýtgedilmedi) -->
+    <!-- Esasy haryt bölümi -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-10 reveal">
-        <!-- Image gallery with zoom -->
-        <div class="relative">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden">
-                <img id="mainImage" src="{{ product.images.first.image.url|default:'https://via.placeholder.com/600' }}"
-                     class="w-full aspect-square md:h-[500px] object-cover cursor-zoom-in transition-transform duration-300"
-                     data-zoom="{{ product.images.first.image.url }}">
-            </div>
-            <div class="flex gap-3 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+        <!-- Täze galereýa bölümi -->
+        <div class="flex flex-col md:flex-row gap-4">
+            <!-- Dik thumbnailer (çepde) -->
+            <div class="flex md:flex-col gap-3 order-2 md:order-1 overflow-x-auto md:overflow-visible scrollbar-hide">
                 {% for img in product.images.all %}
-                <div class="shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 border-transparent hover:border-lux-400 cursor-pointer transition-colors"
-                     onclick="document.getElementById('mainImage').src='{{ img.image.url }}'">
-                    <img src="{{ img.image.url }}" class="w-full h-full object-cover">
+                <div class="shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 cursor-pointer transition-colors thumb-item {% if forloop.first %}border-lux-400{% else %}border-transparent hover:border-lux-400{% endif %}"
+                     data-index="{{ forloop.counter0 }}"
+                     onclick="setMainImage({{ forloop.counter0 }})">
+                    <img src="{{ img.image.url }}" class="w-full h-full object-cover" alt="">
                 </div>
                 {% endfor %}
             </div>
+            <!-- Esasy surat (sagda) -->
+            <div class="flex-1 order-1 md:order-2 relative">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden">
+                    <img id="mainImage" src="{{ product.images.first.image.url|default:'https://via.placeholder.com/600' }}"
+                         class="w-full aspect-square md:h-[500px] object-cover cursor-zoom-in transition-transform duration-300"
+                         data-zoom="{{ product.images.first.image.url }}">
+                </div>
+            </div>
         </div>
+
+        <!-- Maglumat bölümi (üýtgemedi) -->
         <div>
             <p class="text-lux-600 font-medium">{{ product.category.name }}</p>
             <h1 class="font-display text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ product.name }}</h1>
@@ -33,6 +40,23 @@
                     <span class="text-4xl font-bold text-gray-800 dark:text-gray-100">${{ product.price }}</span>
                 {% endif %}
             </div>
+
+            <!-- Rating Summary -->
+            <div class="flex items-center gap-2 mt-2">
+                <div class="flex text-amber-400">
+                    <i class="bi bi-star{% if avg_rating >= 1 %}-fill{% endif %}"></i>
+                    <i class="bi bi-star{% if avg_rating >= 2 %}-fill{% endif %}"></i>
+                    <i class="bi bi-star{% if avg_rating >= 3 %}-fill{% endif %}"></i>
+                    <i class="bi bi-star{% if avg_rating >= 4 %}-fill{% endif %}"></i>
+                    <i class="bi bi-star{% if avg_rating >= 5 %}-fill{% endif %}"></i>
+                </div>
+                <span class="text-sm text-gray-500">({{ reviews.count }} reviews)</span>
+                <div class="ml-auto flex items-center gap-1.5 text-gray-400 text-sm">
+                    <i class="bi bi-eye"></i>
+                    <span>{{ product.view_count }} views</span>
+                </div>
+            </div>
+
             <p class="text-gray-600 dark:text-gray-400 mt-6 leading-relaxed">{{ product.description }}</p>
             <div class="border-t border-gray-200 dark:border-gray-700 mt-8 pt-6">
                 {% if product.available %}
@@ -61,7 +85,60 @@
         </div>
     </div>
 
-    <!-- ========== Täze bölüm: Degişli harytlar (Related Products) ========== -->
+    <!-- Review Section -->
+    <div class="mt-20 reveal">
+        <div class="border-b border-gray-100 dark:border-gray-800 pb-8 mb-12 flex flex-wrap items-end justify-between gap-6">
+            <div>
+                <h2 class="font-display text-3xl font-bold text-gray-900 dark:text-white">Customer Reviews</h2>
+                <p class="text-gray-500 mt-1">What our community thinks about this piece.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-16">
+            <!-- Left: Existing Reviews -->
+            <div class="lg:col-span-2 space-y-10">
+                {% for review in reviews %}
+                <div class="group">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-lux-gradient flex items-center justify-center text-white font-bold">
+                                {{ review.user.fullname|first|upper }}
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-900 dark:text-white">{{ review.user.fullname }}</p>
+                                <p class="text-xs text-gray-400">{{ review.created_at|date:"F d, Y" }}</p>
+                            </div>
+                        </div>
+                        <div class="flex text-amber-400 text-xs">
+                            {% for i in "12345" %}
+                                <i class="bi bi-star{% if review.rating >= forloop.counter %}-fill{% endif %}"></i>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{{ review.comment }}</p>
+                </div>
+                {% empty %}
+                <p class="text-gray-400 italic">No reviews yet. Be the first to review this product!</p>
+                {% endfor %}
+            </div>
+
+            <!-- Right: Add Review Form -->
+            {% if user.is_authenticated and user.role == 'CUSTOMER' %}
+            <div class="lg:col-span-1">
+                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-3xl p-8 sticky top-24">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Write a Review</h3>
+                    <form action="{% url 'add_review' product.id %}" method="POST" class="space-y-4">
+                        {% csrf_token %}
+                        {{ review_form.as_p }}
+                        <button type="submit" class="w-full bg-lux-600 text-white py-3 rounded-xl font-medium hover:bg-lux-700 transition-all">Submit Review</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Degişli harytlar (Related Products) -->
     {% if related_products %}
     <section class="mt-16 reveal">
         <h2 class="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-white mb-6">
@@ -78,6 +155,10 @@
                 <div class="p-4">
                     <p class="text-sm text-gray-500 dark:text-gray-400">{{ rp.brand.name|default:'' }}</p>
                     <h3 class="font-semibold text-gray-800 dark:text-white truncate">{{ rp.name }}</h3>
+                    <div class="flex items-center gap-1 mt-1 text-xs text-amber-400">
+                        <i class="bi bi-star-fill"></i>
+                        <span class="text-gray-500">({{ rp.review_count|default:0 }})</span>
+                    </div>
                     <div class="mt-2 flex items-baseline gap-2">
                         {% if rp.discount_price %}
                             <span class="text-lg font-bold text-lux-600">${{ rp.discount_price }}</span>
@@ -93,7 +174,7 @@
     </section>
     {% endif %}
 
-    <!-- ========== Täze bölüm: Soňky görlenler (Recently Viewed) ========== -->
+    <!-- Soňky görlenler (Recently Viewed) -->
     {% if recently_viewed %}
     <section class="mt-12 reveal">
         <h2 class="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-white mb-6">
@@ -110,6 +191,10 @@
                 <div class="p-4">
                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ rv.brand.name|default:'' }}</p>
                     <h3 class="font-semibold text-gray-800 dark:text-white truncate">{{ rv.name }}</h3>
+                    <div class="flex items-center gap-1 mt-1 text-xs text-amber-400">
+                        <i class="bi bi-star-fill"></i>
+                        <span class="text-gray-500">({{ rv.review_count|default:0 }})</span>
+                    </div>
                     <div class="mt-2 flex items-baseline gap-2">
                         {% if rv.discount_price %}
                             <span class="text-lg font-bold text-lux-600">${{ rv.discount_price }}</span>
@@ -129,6 +214,86 @@
 
 {% block extra_js %}
 <script>
+    // Suratlar barada maglumatlary JavaScript-e geçirýäris
+    const productImages = [
+        {% for img in product.images.all %}
+        "{{ img.image.url }}"{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    let currentIndex = 0;
+    let autoSlideTimer = null;
+
+    // Esasy suraty we thumbnail aktiwligini täzeleýän funksiýa
+    function setMainImage(index) {
+        currentIndex = index;
+        const mainImg = document.getElementById('mainImage');
+        mainImg.src = productImages[index];
+        mainImg.dataset.zoom = productImages[index];
+
+        // Thumbnail-leriň çäklerini aktiwleşdir
+        document.querySelectorAll('.thumb-item').forEach((item, i) => {
+            if (i === index) {
+                item.classList.add('border-lux-400');
+                item.classList.remove('border-transparent');
+            } else {
+                item.classList.remove('border-lux-400');
+                item.classList.add('border-transparent');
+            }
+        });
+
+        // Awtomatiki slaýdy täzeden başlat (ýa-da duruz)
+        resetAutoSlide();
+    }
+
+    // Indiki surata geçmek
+    function nextImage() {
+        if (productImages.length > 0) {
+            currentIndex = (currentIndex + 1) % productImages.length;
+            setMainImage(currentIndex);
+        }
+    }
+
+    // Awtomatiki slaýdy başlamak
+    function startAutoSlide() {
+        if (productImages.length > 1) {
+            stopAutoSlide();
+            autoSlideTimer = setInterval(nextImage, 4000); // 4 sekuntdan üýtgeýär
+        }
+    }
+
+    // Slaýdy duruzmak
+    function stopAutoSlide() {
+        if (autoSlideTimer) {
+            clearInterval(autoSlideTimer);
+            autoSlideTimer = null;
+        }
+    }
+
+    // Ulanyjy el bilen surat saýlanda slaýd taymerini sıfırla
+    function resetAutoSlide() {
+        stopAutoSlide();
+        startAutoSlide();
+    }
+
+    // Sahypa ýüklenende slaýdy işe giriz
+    document.addEventListener('DOMContentLoaded', function() {
+        if (productImages.length > 0) {
+            // Ilkinji surat boýunça thumbnail-i aktiw et (eýýäm şablon bilen gelýär, ýöne anyk bolaly)
+            document.querySelectorAll('.thumb-item').forEach((item, i) => {
+                if (i === 0) {
+                    item.classList.add('border-lux-400');
+                    item.classList.remove('border-transparent');
+                } else {
+                    item.classList.remove('border-lux-400');
+                    item.classList.add('border-transparent');
+                }
+            });
+            startAutoSlide();
+        }
+    });
+
+    // Möçber üýtgetmek
     function changeQty(delta) {
         const input = document.getElementById('qtyInput');
         let val = parseInt(input.value) || 1;
@@ -137,6 +302,7 @@
         input.value = val;
     }
 
+    // Sebede goşmak
     document.getElementById('addToCartBtn')?.addEventListener('click', async function() {
         const id = this.dataset.productId;
         const qty = parseInt(document.getElementById('qtyInput').value);
@@ -149,6 +315,7 @@
         }
     });
 
+    // Halananlara goşmak / aýyrmak
     document.getElementById('favoriteBtn')?.addEventListener('click', async function() {
         const id = this.dataset.productId;
         const res = await ajaxPost(`/favorites/toggle/${id}/`);
@@ -167,7 +334,7 @@
         }
     });
 
-    // Image zoom effect
+    // Surat ulaltma (zoom) effekti
     const mainImg = document.getElementById('mainImage');
     mainImg?.addEventListener('mousemove', (e) => {
         const { left, top, width, height } = mainImg.getBoundingClientRect();

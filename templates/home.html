@@ -174,6 +174,10 @@
                     <div class="p-8">
                         <p id="qv-category" class="text-lux-600 font-medium text-sm"></p>
                         <h2 id="qv-name" class="font-display text-3xl font-bold text-gray-900 dark:text-white mt-2"></h2>
+                        <div class="flex items-center gap-1.5 mt-2 text-amber-400 text-xs">
+                            <i class="bi bi-star-fill"></i>
+                            <span id="qv-review-count" class="text-gray-500"></span>
+                        </div>
                         <div class="flex items-baseline gap-3 mt-4">
                             <span id="qv-effective-price" class="text-3xl font-bold text-lux-600"></span>
                             <span id="qv-original-price" class="text-lg text-gray-400 line-through hidden"></span>
@@ -360,6 +364,7 @@
             currentQVProductId = data.id;
             document.getElementById('qv-name').textContent = data.name;
             document.getElementById('qv-category').textContent = data.category;
+            document.getElementById('qv-review-count').textContent = `(${data.review_count} reviews)`;
             document.getElementById('qv-description').textContent = data.description;
             document.getElementById('qv-effective-price').textContent = `$${data.effective_price}`;
             document.getElementById('qv-image').src = data.images[0] || PLACEHOLDER_IMAGE_URL;

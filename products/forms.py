@@ -3,7 +3,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.core.exceptions import ValidationError
-from .models import User, Product, CartItem, ProductImage, Category, Brand
+from .models import User, Product, CartItem, ProductImage, Category, Brand, Review
 
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
 
@@ -258,3 +258,19 @@ class CartItemUpdateForm(forms.ModelForm):
         if qty < 1:
             raise ValidationError("Quantity must be at least 1.")
         return qty
+
+
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = Review
+        fields = ['rating', 'comment']
+        widgets = {
+            'rating': forms.Select(choices=[(i, str(i)) for i in range(1, 6)], attrs={
+                'class': 'w-full px-4 py-2 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none'
+            }),
+            'comment': forms.Textarea(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none',
+                'rows': 4,
+                'placeholder': 'Write your review here...'
+            }),
+        }

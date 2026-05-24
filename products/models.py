@@ -161,6 +161,7 @@ class Product(models.Model):
         User, on_delete=models.PROTECT, related_name='products',
         limit_choices_to={'role': User.Role.SELLER}
     )
+    view_count = models.PositiveIntegerField(default=0)
 
     def clean(self):
         if self.discount_price is not None and self.discount_price >= self.price:
@@ -313,6 +314,21 @@ class Payment(models.Model):
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     paid_at = models.DateTimeField(auto_now_add=True)
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
+    rating = models.PositiveSmallIntegerField(default=5)
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        # ensure a user can only review a product once
+        unique_together = ('product', 'user')
+
+    def __str__(self):
+        return f"{self.user.fullname} - {self.product.name} ({self.rating})"
 
 
 class Favorite(models.Model):

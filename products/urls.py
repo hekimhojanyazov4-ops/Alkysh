@@ -4,6 +4,7 @@ from .views import (
     admin_customer_bulk_action, home, register, login_view, logout_view,
     cart_view, checkout, add_to_cart, update_cart_item, remove_from_cart,
     create_order, order_list, order_detail, product_detail,
+    add_review,
     seller_dashboard, seller_product_list, seller_product_add,
     withdraw_funds,
     confirm_order_delivery,
@@ -55,6 +56,7 @@ urlpatterns = [
     path('favorites/toggle/<int:product_id>/', toggle_favorite, name='toggle_favorite'),
 
     path('product/<uuid:uuid>/', product_detail, name='product_detail'),
+    path('product/<int:product_id>/review/', add_review, name='add_review'),
     path('api/product/<uuid:uuid>/', api_product_detail, name='api_product_detail'),
 
     # Seller Routes
