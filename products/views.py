@@ -1678,3 +1678,11 @@ def admin_reset_password(request, user_id):
     return render(request, 'admin_reset_password.html', {
         'target_user': target_user,
     })
+
+
+def terms_of_use(request):
+    return render(request, 'terms_of_use.html')
+
+
+def privacy_policy(request):
+    return render(request, 'privacy_policy.html')

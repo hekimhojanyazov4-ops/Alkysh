@@ -11,6 +11,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.core.validators import FileExtensionValidator
 from django.urls import reverse
+from django.utils.text import slugify
 
 
 def validate_file_size(value):
@@ -49,7 +50,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_approved = models.BooleanField(default=False)
     verification_document = models.FileField(
         upload_to='seller_docs/',
-        blank=True,
+       
+ blank=True,
         null=True,
         validators=[
             FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png']),
@@ -118,17 +120,31 @@ class Brand(models.Model):
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=200)
-    slug = models.SlugField(max_length=200, unique=True)
-    icon = models.ImageField(upload_to='category_images/', blank=True, null=True)
-    description = models.TextField(blank=True, null=True)
+    name = models.CharField(max_length=200, unique=True, verbose_name="Kategoriýa Ady")
+    slug = models.SlugField(max_length=200, unique=True, blank=True)
 
     class Meta:
+        verbose_name = 'Category'
         verbose_name_plural = 'Categories'
+        ordering = ['name']
 
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    @property
+    def first_product_image(self):
+        """Bu kategoriýadaky ilkinji önümiň ilkinji suratynyň URL-sini yzyna gaýtarýar."""
+        first_product = self.products.first()   # 'products' related_name bilen bagly
+        if first_product:
+            first_image = first_product.images.first()  # Product modelindäki 'images' related_name
+            if first_image:
+                return first_image.image.url
+        return None
 
 class Product(models.Model):
     category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE)

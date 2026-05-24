@@ -27,6 +27,8 @@ from .views import (
     admin_seller_bulk_action, admin_category_bulk_action, admin_order_bulk_action, admin_payment_bulk_action,
     api_admin_bulk_summary, 
     admin_reset_password,
+    terms_of_use,
+    privacy_policy,
 )
 
 urlpatterns = [
@@ -34,6 +36,9 @@ urlpatterns = [
     path('register/', register, name='register'),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
+
+    path('terms_of_use/', terms_of_use, name='terms_of_use'),
+    path('privacy_policy/', privacy_policy, name='privacy_policy'),
 
     path('cart/', cart_view, name='cart'),
     path('checkout/', checkout, name='checkout'),

@@ -119,28 +119,25 @@ class BrandForm(forms.ModelForm):
         }
 
 
+# forms.py
+
+from django import forms
+from .models import Category
+
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
-        fields = ['name', 'slug', 'icon', 'description']
+        fields = ['name', 'slug']
         widgets = {
             'name': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors'
+                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+                'placeholder': 'Kategoriýa ady'
             }),
             'slug': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors'
-            }),
-            'icon': forms.TextInput(attrs={
                 'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
-                'placeholder': 'bi-watch'
-            }),
-            'description': forms.Textarea(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
-                'rows': 3
+                'placeholder': 'Slug (boş goýsaňyz awtomatik dörediler)'
             }),
         }
-
-
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product

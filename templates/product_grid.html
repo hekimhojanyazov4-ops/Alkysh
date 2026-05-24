@@ -1,7 +1,7 @@
 {% if products %}
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
         {% for product in products %}
-            <div class="group bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden hover-scale transition-all duration-300 reveal" id="product-card-{{ product.id }}">
+            <div class="group bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden hover:shadow-[0_0_35px_rgba(124,58,237,0.15)] hover:scale-[1.02] transition-all duration-500 reveal" id="product-card-{{ product.id }}">
                 <div class="relative h-56 overflow-hidden">
                     {% if product.images.first %}
                         <img src="{{ product.images.first.image.url }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="{{ product.name }}">
@@ -44,7 +44,7 @@
                     <div class="flex gap-2 pt-2 border-t border-gray-50 dark:border-gray-700/50">
                         <a href="{% url 'product_detail' product.uuid %}" class="flex-1 text-center border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-2.5 rounded-xl text-xs font-bold transition-all">Details</a>
                         {% if user.is_authenticated and user.role == 'CUSTOMER' %}
-                            <button class="add-to-cart-btn flex-1 bg-lux-600 hover:bg-lux-700 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95"
+                            <button class="btn-gold-premium add-to-cart-btn flex-1 bg-gold-500 hover:bg-gold-600 text-gray-950 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95"
                                     data-product-id="{{ product.id }}" data-product-name="{{ product.name }}">
                                 <i class="bi bi-cart-plus mr-1"></i> Add
                             </button>
