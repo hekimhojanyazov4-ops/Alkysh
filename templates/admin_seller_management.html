@@ -40,7 +40,7 @@
             <form method="post" action="{% url 'admin_seller_bulk_action' %}" id="pending-bulk-form">
                 {% csrf_token %}
                 <!-- Pending Bulk Toolbar -->
-                <div class="flex items-center justify-between px-6 py-3 mb-4 border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl">
+                <div id="pending-bulk-toolbar" class="hidden flex items-center justify-between px-6 py-3 mb-4 border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl">
                     <div class="flex items-center gap-3">
                         <select name="action" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white px-3 py-2 focus:ring-lux-500 focus:border-lux-500">
                             <option value="">-- Bulk Action --</option>
@@ -63,8 +63,8 @@
                                     <th class="px-6 py-4 w-10">
                                         <input type="checkbox" id="pending-select-all" class="rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
                                     </th>
-                                    <th class="px-6 py-4 font-semibold"><a href="{% url_replace 'order_by' 'fullname' %}" class="hover:text-gray-700 dark:hover:text-white">Name {% if request.GET.order_by == 'fullname' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-fullname' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
-                                    <th class="px-6 py-4 font-semibold"><a href="{% url_replace 'order_by' 'email' %}" class="hover:text-gray-700 dark:hover:text-white">Email {% if request.GET.order_by == 'email' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-email' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                                    <th class="px-6 py-4 font-semibold"><a href="?{% url_replace order_by='fullname' %}" class="hover:text-gray-700 dark:hover:text-white">Name {% if request.GET.order_by == 'fullname' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-fullname' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                                    <th class="px-6 py-4 font-semibold"><a href="?{% url_replace order_by='email' %}" class="hover:text-gray-700 dark:hover:text-white">Email {% if request.GET.order_by == 'email' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-email' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
                                     <th class="px-6 py-4 font-semibold">Document</th>
                                     <th class="px-6 py-4 font-semibold text-right">Actions</th>
                                 </tr>
@@ -89,7 +89,8 @@
                                             <span class="text-gray-400 italic text-sm">None</span>
                                         {% endif %}
                                     </td>
-                                    <td class="px-6 py-4 text-right space-x-3">
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex flex-wrap justify-end gap-2">
                                         <form action="{% url 'approve_seller' seller.id %}" method="post" class="inline">
                                             {% csrf_token %}
                                             <button type="submit" class="text-green-600 hover:text-green-700 font-semibold text-sm">Approve</button>
@@ -103,6 +104,7 @@
                                            class="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full hover:bg-amber-200 dark:bg-amber-900 dark:text-amber-300 transition-colors">
                                             <i class="bi bi-key mr-1"></i> Reset Password
                                         </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% empty %}
@@ -118,7 +120,7 @@
             <div class="mt-8">
                 <nav class="flex justify-center items-center space-x-2">
                     {% if pending_sellers.has_previous %}
-                        <a href="?pending_page={{ pending_sellers.previous_page_number }}{% url_replace_params 'pending_page' pending_sellers.previous_page_number %}"
+                        <a href="?{% url_replace pending_page=pending_sellers.previous_page_number %}"
                            class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
                         </a>
@@ -128,7 +130,7 @@
                         {% if pending_sellers.number == i %}
                             <span class="px-4 py-2 bg-lux-600 text-white rounded-xl font-bold shadow-md">{{ i }}</span>
                         {% elif i > pending_sellers.number|add:'-3' and i < pending_sellers.number|add:'3' %}
-                            <a href="?pending_page={{ i }}{% url_replace_params 'pending_page' i %}"
+                            <a href="?{% url_replace pending_page=i %}"
                                class="px-4 py-2 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 font-medium">
                                 {{ i }}
                             </a>
@@ -136,7 +138,7 @@
                     {% endfor %}
 
                     {% if pending_sellers.has_next %}
-                        <a href="?pending_page={{ pending_sellers.next_page_number }}{% url_replace_params 'pending_page' pending_sellers.next_page_number %}"
+                        <a href="?{% url_replace pending_page=pending_sellers.next_page_number %}"
                            class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
                         </a>
@@ -153,7 +155,7 @@
             <form method="post" action="{% url 'admin_seller_bulk_action' %}" id="approved-bulk-form">
                 {% csrf_token %}
                 <!-- Approved Bulk Toolbar -->
-                <div class="flex items-center justify-between px-6 py-3 mb-4 border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl">
+                <div id="approved-bulk-toolbar" class="hidden flex items-center justify-between px-6 py-3 mb-4 border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl">
                     <div class="flex items-center gap-3">
                         <select name="action" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white px-3 py-2 focus:ring-lux-500 focus:border-lux-500">
                             <option value="">-- Bulk Action --</option>
@@ -201,7 +203,8 @@
                                             <span class="text-gray-400 italic text-sm">None</span>
                                         {% endif %}
                                     </td>
-                                    <td class="px-6 py-4 text-right space-x-3">
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex flex-wrap justify-end gap-2">
                                         <span class="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-md text-xs font-bold uppercase">Approved</span>
                                         <!-- Password Reset Link -->
                                         <a href="{% url 'admin_reset_password' seller.id %}" 
@@ -212,6 +215,7 @@
                                             {% csrf_token %}
                                             <button type="submit" class="text-red-500 hover:text-red-600 font-semibold text-sm">Delete</button>
                                         </form>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% empty %}
@@ -227,7 +231,7 @@
             <div class="mt-8">
                 <nav class="flex justify-center items-center space-x-2">
                     {% if approved_sellers.has_previous %}
-                        <a href="?approved_page={{ approved_sellers.previous_page_number }}{% url_replace_params 'approved_page' approved_sellers.previous_page_number %}"
+                        <a href="?{% url_replace approved_page=approved_sellers.previous_page_number %}"
                            class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
                         </a>
@@ -237,7 +241,7 @@
                         {% if approved_sellers.number == i %}
                             <span class="px-4 py-2 bg-lux-600 text-white rounded-xl font-bold shadow-md">{{ i }}</span>
                         {% elif i > approved_sellers.number|add:'-3' and i < approved_sellers.number|add:'3' %}
-                            <a href="?approved_page={{ i }}{% url_replace_params 'approved_page' i %}"
+                            <a href="?{% url_replace approved_page=i %}"
                                class="px-4 py-2 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 font-medium">
                                 {{ i }}
                             </a>
@@ -245,7 +249,7 @@
                     {% endfor %}
 
                     {% if approved_sellers.has_next %}
-                        <a href="?approved_page={{ approved_sellers.next_page_number }}{% url_replace_params 'approved_page' approved_sellers.next_page_number %}"
+                        <a href="?{% url_replace approved_page=approved_sellers.next_page_number %}"
                            class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
                         </a>
@@ -259,64 +263,89 @@
 
 {% block extra_js %}
 <script>
-    // Pending Bulk Selection
-    (function() {
-        const selectAll = document.getElementById('pending-select-all');
-        const checkboxes = document.querySelectorAll('.pending-checkbox');
-        const countSpan = document.getElementById('pending-selected-count');
+    /**
+     * Initializes bulk selection functionality.
+     * @param {Object} config
+     * @param {string} config.selectAllId - ID of the "select all" checkbox
+     * @param {string} config.checkboxClass - Class of individual item checkboxes
+     * @param {string} config.toolbarId - ID of the bulk action toolbar
+     * @param {string} config.countId - ID of the element showing selected count
+     * @param {string} config.formId - ID of the bulk action form (optional, for reset on submit)
+     */
+    function initBulkActions({ selectAllId, checkboxClass, toolbarId, countId, formId }) {
+        const selectAll = document.getElementById(selectAllId);
+        const checkboxes = document.querySelectorAll(`.${checkboxClass}`);
+        const toolbar = document.getElementById(toolbarId);
+        const countDisplay = document.getElementById(countId);
+        const form = formId ? document.getElementById(formId) : null;
 
-        function updateCount() {
-            const selected = document.querySelectorAll('.pending-checkbox:checked').length;
-            countSpan.textContent = selected + ' selected';
+        function updateUI() {
+            const checked = document.querySelectorAll(`.${checkboxClass}:checked`);
+            const count = checked.length;
+            const allChecked = checkboxes.length > 0 && count === checkboxes.length;
+
+            // Update select-all checkbox
+            if (selectAll) {
+                selectAll.checked = allChecked;
+                selectAll.indeterminate = count > 0 && !allChecked;
+            }
+
+            // Show/hide toolbar
+            if (toolbar) {
+                toolbar.classList.toggle('hidden', count === 0);
+            }
+
+            // Update count text
+            if (countDisplay) {
+                countDisplay.textContent = `${count} selected`;
+            }
         }
 
+        // "Select All" checkbox handler
         if (selectAll) {
-            selectAll.addEventListener('change', function(e) {
-                checkboxes.forEach(cb => cb.checked = e.target.checked);
-                updateCount();
+            selectAll.addEventListener('change', function () {
+                const isChecked = this.checked;
+                checkboxes.forEach(cb => { cb.checked = isChecked; });
+                updateUI();
             });
         }
 
+        // Individual checkbox handlers
         checkboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                if (selectAll) {
-                    selectAll.checked = document.querySelectorAll('.pending-checkbox:checked').length === checkboxes.length;
-                }
-                updateCount();
-            });
+            cb.addEventListener('change', updateUI);
         });
 
-        updateCount();
-    })();
-
-    // Approved Bulk Selection
-    (function() {
-        const selectAll = document.getElementById('approved-select-all');
-        const checkboxes = document.querySelectorAll('.approved-checkbox');
-        const countSpan = document.getElementById('approved-selected-count');
-
-        function updateCount() {
-            const selected = document.querySelectorAll('.approved-checkbox:checked').length;
-            countSpan.textContent = selected + ' selected';
-        }
-
-        if (selectAll) {
-            selectAll.addEventListener('change', function(e) {
-                checkboxes.forEach(cb => cb.checked = e.target.checked);
-                updateCount();
+        // Reset after form submit (to avoid stale state)
+        if (form) {
+            form.addEventListener('submit', function () {
+                setTimeout(() => {
+                    if (selectAll) selectAll.checked = false;
+                    checkboxes.forEach(cb => { cb.checked = false; });
+                    updateUI();
+                }, 10);
             });
         }
 
-        checkboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                if (selectAll) {
-                    selectAll.checked = document.querySelectorAll('.approved-checkbox:checked').length === checkboxes.length;
-                }
-                updateCount();
-            });
-        });
+        // Initial state
+        updateUI();
+    }
 
-        updateCount();
-    })();
+    // Activate for pending sellers
+    initBulkActions({
+        selectAllId: 'pending-select-all',
+        checkboxClass: 'pending-checkbox',
+        toolbarId: 'pending-bulk-toolbar',
+        countId: 'pending-selected-count',
+        formId: 'pending-bulk-form'
+    });
+
+    // Activate for approved sellers
+    initBulkActions({
+        selectAllId: 'approved-select-all',
+        checkboxClass: 'approved-checkbox',
+        toolbarId: 'approved-bulk-toolbar',
+        countId: 'approved-selected-count',
+        formId: 'approved-bulk-form'
+    });
 </script>
 {% endblock %}

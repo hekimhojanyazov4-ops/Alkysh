@@ -13,6 +13,8 @@ from .views import (
     seller_product_bulk_action,
     export_sales_csv,
     admin_dashboard,
+    admin_review_list, admin_review_delete, admin_review_bulk_action,
+    admin_favorite_list, admin_favorite_bulk_action,
     admin_seller_management,
     admin_customer_list,
     admin_payment_list,
@@ -30,6 +32,7 @@ from .views import (
     admin_reset_password,
     terms_of_use,
     privacy_policy,
+    wishlist_bulk_remove,
 )
 
 urlpatterns = [
@@ -73,6 +76,12 @@ urlpatterns = [
     # Admin Panel
     path('admin-panel/dashboard/', admin_dashboard, name='admin_dashboard'),
     path('admin-panel/sellers/', admin_seller_management, name='admin_seller_management'),
+    path('admin-panel/reviews/', admin_review_list, name='admin_review_list'),
+    path('admin-panel/reviews/delete/<int:pk>/', admin_review_delete, name='admin_review_delete'),
+    path('admin-panel/reviews/bulk-action/', admin_review_bulk_action, name='admin_review_bulk_action'),
+    path('admin-panel/favorites/', admin_favorite_list, name='admin_favorite_list'),
+    path('admin-panel/favorites/bulk-action/', admin_favorite_bulk_action, name='admin_favorite_bulk_action'),
+
     path('admin-panel/sellers/bulk-action/', admin_seller_bulk_action, name='admin_seller_bulk_action'),
     path('admin-panel/sellers/delete/<int:user_id>/', admin_seller_delete, name='admin_seller_delete'),
     path('admin-panel/sellers/approve/<int:user_id>/', approve_seller, name='approve_seller'),
@@ -106,6 +115,7 @@ urlpatterns = [
     path('admin-panel/orders/bulk-action/', admin_order_bulk_action, name='admin_order_bulk_action'),
     path('admin-panel/payments/bulk-action/', admin_payment_bulk_action, name='admin_payment_bulk_action'),
     path('admin-panel/api/bulk-summary/', api_admin_bulk_summary, name='api_admin_bulk_summary'),
+    path('wishlist/bulk-remove/', wishlist_bulk_remove, name='wishlist_bulk_remove'),
 
     # 'admin/' prefiksini 'admin-panel/' edip üýtgetdik:
     path('admin-panel/users/<int:user_id>/reset-password/', admin_reset_password, name='admin_reset_password'), 

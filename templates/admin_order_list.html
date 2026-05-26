@@ -43,11 +43,11 @@
                             <th class="px-6 py-4 w-10">
                                 <input type="checkbox" id="select-all" class="rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
                             </th>
-                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'display_id' %}" class="hover:text-gray-700 dark:hover:text-white">Order ID {% if request.GET.order_by == 'display_id' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-display_id' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
-                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'created_at' %}" class="hover:text-gray-700 dark:hover:text-white">Date {% if request.GET.order_by == 'created_at' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-created_at' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
-                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'customer__fullname' %}" class="hover:text-gray-700 dark:hover:text-white">Customer {% if request.GET.order_by == 'customer__fullname' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-customer__fullname' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
-                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'total_price' %}" class="hover:text-gray-700 dark:hover:text-white">Amount {% if request.GET.order_by == 'total_price' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-total_price' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
-                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'status' %}" class="hover:text-gray-700 dark:hover:text-white">Status {% if request.GET.order_by == 'status' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-status' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="?{% url_replace order_by='display_id' %}" class="hover:text-gray-700 dark:hover:text-white">Order ID {% if request.GET.order_by == 'display_id' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-display_id' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="?{% url_replace order_by='created_at' %}" class="hover:text-gray-700 dark:hover:text-white">Date {% if request.GET.order_by == 'created_at' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-created_at' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="?{% url_replace order_by='customer__fullname' %}" class="hover:text-gray-700 dark:hover:text-white">Customer {% if request.GET.order_by == 'customer__fullname' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-customer__fullname' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="?{% url_replace order_by='total_price' %}" class="hover:text-gray-700 dark:hover:text-white">Amount {% if request.GET.order_by == 'total_price' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-total_price' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="?{% url_replace order_by='status' %}" class="hover:text-gray-700 dark:hover:text-white">Status {% if request.GET.order_by == 'status' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-status' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
                             <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
@@ -101,7 +101,7 @@
     <div class="mt-8">
         <nav class="flex justify-center items-center space-x-2">
             {% if orders.has_previous %}
-                <a href="?page={{ orders.previous_page_number }}{% url_replace_params 'page' orders.previous_page_number %}"
+                <a href="?{% url_replace page=orders.previous_page_number %}"
                    class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
                 </a>
@@ -111,7 +111,7 @@
                 {% if orders.number == i %}
                     <span class="px-4 py-2 bg-lux-600 text-white rounded-xl font-bold shadow-md">{{ i }}</span>
                 {% elif i > orders.number|add:'-3' and i < orders.number|add:'3' %}
-                    <a href="?page={{ i }}{% url_replace_params 'page' i %}"
+                    <a href="?{% url_replace page=i %}"
                        class="px-4 py-2 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 font-medium">
                         {{ i }}
                     </a>
@@ -119,7 +119,7 @@
             {% endfor %}
 
             {% if orders.has_next %}
-                <a href="?page={{ orders.next_page_number }}{% url_replace_params 'page' orders.next_page_number %}"
+                <a href="?{% url_replace page=orders.next_page_number %}"
                    class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
                 </a>

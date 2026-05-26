@@ -13,19 +13,19 @@ class CustomUserCreationForm(UserCreationForm):
         choices=[c for c in User.Role.choices if c[0] != User.Role.ADMIN],
         initial=User.Role.CUSTOMER,
         widget=forms.Select(attrs={
-            'class': 'w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors'
+            'class': 'w-full pl-10 pr-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors'
         })
     )
     fullname = forms.CharField(
         max_length=200,
         widget=forms.TextInput(attrs={
-            'class': 'w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+            'class': 'w-full pl-10 pr-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
             'placeholder': 'Full Name'
         })
     )
     email = forms.EmailField(
         widget=forms.EmailInput(attrs={
-            'class': 'w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+            'class': 'w-full pl-10 pr-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
             'placeholder': 'Email Address'
         })
     )
@@ -33,7 +33,7 @@ class CustomUserCreationForm(UserCreationForm):
         label="Password",
         strip=False,
         widget=forms.PasswordInput(attrs={
-            'class': 'w-full pl-10 pr-10 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+            'class': 'w-full pl-10 pr-10 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
             'placeholder': 'Password'
         }),
     )
@@ -41,7 +41,7 @@ class CustomUserCreationForm(UserCreationForm):
         label="Confirm Password",
         strip=False,
         widget=forms.PasswordInput(attrs={
-            'class': 'w-full pl-10 pr-10 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+            'class': 'w-full pl-10 pr-10 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
             'placeholder': 'Confirm Password'
         }),
     )
@@ -49,7 +49,7 @@ class CustomUserCreationForm(UserCreationForm):
         required=False,
         label="Identity Verification (Sellers only)",
         widget=forms.FileInput(attrs={
-            'class': 'w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-lux-50 file:text-lux-700 hover:file:bg-lux-100 dark:file:bg-lux-900/30 dark:file:text-lux-400 transition-colors'
+            'class': 'w-full text-sm text-slate-500 bg-white dark:bg-slate-950 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 dark:file:bg-slate-800 dark:file:text-slate-300 transition-colors'
         })
     )
 
@@ -93,13 +93,13 @@ class CustomUserCreationForm(UserCreationForm):
 class CustomAuthenticationForm(AuthenticationForm):
     username = forms.EmailField(
         widget=forms.EmailInput(attrs={
-            'class': 'w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+            'class': 'w-full pl-10 pr-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
             'placeholder': 'Email'
         })
     )
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={
-            'class': 'w-full pl-10 pr-10 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+            'class': 'w-full pl-10 pr-10 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
             'placeholder': 'Password'
         })
     )
@@ -111,10 +111,10 @@ class BrandForm(forms.ModelForm):
         fields = ['name', 'logo']
         widgets = {
             'name': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors'
+                'class': 'w-full px-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors'
             }),
             'logo': forms.FileInput(attrs={
-                'class': 'w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-lux-50 file:text-lux-700 hover:file:bg-lux-100 dark:file:bg-lux-900/30 dark:file:text-lux-400 transition-colors'
+                'class': 'w-full text-sm text-slate-500 bg-white dark:bg-slate-950 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 dark:file:bg-slate-800 dark:file:text-slate-300 transition-colors'
             }),
         }
 
@@ -130,11 +130,11 @@ class CategoryForm(forms.ModelForm):
         fields = ['name', 'slug']
         widgets = {
             'name': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+                'class': 'w-full px-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
                 'placeholder': 'Kategoriýa ady'
             }),
             'slug': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+                'class': 'w-full px-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
                 'placeholder': 'Slug (boş goýsaňyz awtomatik dörediler)'
             }),
         }
@@ -144,30 +144,30 @@ class ProductForm(forms.ModelForm):
         fields = ['category', 'brand', 'name', 'price', 'description', 'discount_price', 'available']
         widgets = {
             'category': forms.Select(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors'
+                'class': 'w-full px-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors'
             }),
             'brand': forms.Select(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors'
+                'class': 'w-full px-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors'
             }),
             'name': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+                'class': 'w-full px-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
                 'placeholder': 'Product Name'
             }),
             'price': forms.NumberInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+                'class': 'w-full px-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
                 'placeholder': '0.00'
             }),
             'description': forms.Textarea(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+                'class': 'w-full px-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
                 'rows': 4,
                 'placeholder': 'Describe your luxury item...'
             }),
             'discount_price': forms.NumberInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
+                'class': 'w-full px-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors',
                 'placeholder': 'Optional discount price'
             }),
             'available': forms.CheckboxInput(attrs={
-                'class': 'w-5 h-5 rounded text-lux-600 focus:ring-lux-500 border-gray-300 dark:border-gray-700 dark:bg-gray-900'
+                'class': 'w-5 h-5 rounded text-lux-600 focus:ring-lux-500 bg-white border-gray-300 dark:border-gray-700 dark:bg-slate-950'
             }),
         }
         labels = {
@@ -188,7 +188,7 @@ class AdminProductForm(ProductForm):
     seller = forms.ModelChoiceField(
         queryset=User.objects.filter(role=User.Role.SELLER, is_approved=True),
         widget=forms.Select(attrs={
-            'class': 'w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors'
+            'class': 'w-full px-4 py-3 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none transition-colors'
         }),
         required=True,
         empty_label="Select a Seller"
@@ -266,10 +266,10 @@ class ReviewForm(forms.ModelForm):
         fields = ['rating', 'comment']
         widgets = {
             'rating': forms.Select(choices=[(i, str(i)) for i in range(1, 6)], attrs={
-                'class': 'w-full px-4 py-2 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none'
+                'class': 'w-full px-4 py-2 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none'
             }),
             'comment': forms.Textarea(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none',
+                'class': 'w-full px-4 py-2 bg-white text-slate-900 border border-gray-200 dark:border-gray-700 dark:bg-slate-950 dark:text-white rounded-xl focus:ring-2 focus:ring-lux-400 focus:outline-none',
                 'rows': 4,
                 'placeholder': 'Write your review here...'
             }),

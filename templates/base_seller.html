@@ -65,14 +65,35 @@
         aside a {
             transition: all 0.2s ease;
         }
+
+        /* Mobile Sidebar Transitions */
+        #seller-sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        @media (max-width: 1023px) {
+            #seller-sidebar {
+                transform: translateX(-100%);
+            }
+            #seller-sidebar.open {
+                transform: translateX(0);
+            }
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body class="h-full flex dark:bg-gray-900 transition-colors duration-500">
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
     <!-- Sidebar -->
-    <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex-shrink-0 flex flex-col z-30 transition-colors duration-500">
-        <div class="p-6 border-b border-gray-100 dark:border-gray-700">
+    <aside id="seller-sidebar" class="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 flex flex-col z-50 transition-colors duration-500 lg:static lg:translate-x-0">
+        <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
             <h1 class="text-2xl font-serif text-gray-900 dark:text-white">LuxMarket</h1>
+            <button class="lg:hidden text-gray-400 hover:text-lux" onclick="toggleSidebar()" aria-label="Close sidebar">
+                <i class="bi bi-x-lg text-xl"></i>
+            </button>
+        </div>
+        <div class="px-6 py-2 border-b border-gray-50 dark:border-gray-700/50">
             <p class="text-[10px] uppercase tracking-widest text-lux font-bold">Partner Portal</p>
         </div>
         <nav class="flex-1 p-4 space-y-1">
@@ -102,7 +123,10 @@
     <!-- Content -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header class="h-16 bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex items-center justify-between px-8 transition-colors duration-500">
-            <div class="text-sm dark:text-gray-300">
+            <div class="flex items-center gap-4 text-sm dark:text-gray-300">
+                <button class="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" onclick="toggleSidebar()" aria-label="Open sidebar">
+                    <i class="bi bi-list text-2xl"></i>
+                </button>
                 <span class="text-gray-400">Account:</span>
                 <span class="font-semibold text-gray-900 dark:text-white ml-1">{{ request.user.fullname }}</span>
             </div>
@@ -127,6 +151,14 @@
     </main>
 </div>
 
+<script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('seller-sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('hidden');
+    }
+</script>
 <!-- Notification Sound -->
 <audio id="notification-sound" preload="auto">
     <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">

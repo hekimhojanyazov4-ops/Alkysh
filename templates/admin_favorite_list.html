@@ -1,0 +1,84 @@
+{% extends 'base_admin.html' %}
+{% load custom_filters %}
+{% block title %}Wishlist Management{% endblock %}
+{% block header_title %}User Wishlists{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Customer Wishlists</h1>
+        <p class="text-gray-500 dark:text-gray-400 mt-1">See which products are currently most wanted.</p>
+    </div>
+
+    <div class="mb-8 reveal">
+        <form method="get" class="flex items-center gap-3">
+            <div class="relative">
+                <input type="text" name="q" value="{{ q|default:'' }}" placeholder="Search user or product..." 
+                       class="pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-lux-400 focus:outline-none dark:text-white w-80">
+                <div class="absolute left-3 top-2.5 text-gray-400">
+                    <i class="bi bi-search text-sm"></i>
+                </div>
+            </div>
+            <button type="submit" class="bg-lux-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-lux-700 transition-colors">Filter</button>
+        </form>
+    </div>
+
+    <form method="post" action="{% url 'admin_favorite_bulk_action' %}" id="bulk-action-form">
+        {% csrf_token %}
+        <div class="flex items-center justify-between px-6 py-3 mb-4 border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl">
+            <div class="flex items-center gap-3">
+                <select name="action" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 dark:text-white px-3 py-2">
+                    <option value="">-- Bulk Action --</option>
+                    <option value="delete">Remove from Wishlists</option>
+                </select>
+                <button type="submit" class="bg-lux-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-lux-700">Apply</button>
+            </div>
+            <span class="text-xs text-gray-500" id="selected-count">0 selected</span>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux overflow-hidden border border-gray-100 dark:border-gray-700 reveal delay-100">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+                        <tr class="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+                            <th class="px-6 py-4 w-10"><input type="checkbox" id="select-all" class="rounded border-gray-300 text-lux-600"></th>
+                            <th class="px-6 py-4">User</th>
+                            <th class="px-6 py-4">Product</th>
+                            <th class="px-6 py-4">Added Date</th>
+                            <th class="px-6 py-4 text-right">Site Link</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        {% for fav in favorites %}
+                        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                            <td class="px-6 py-4"><input type="checkbox" name="ids" value="{{ fav.id }}" class="bulk-checkbox rounded border-gray-300 text-lux-600"></td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ fav.user.fullname }}</div>
+                                <div class="text-xs text-gray-500">{{ fav.user.email }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ fav.product.name }}</div>
+                                <div class="text-xs text-gray-500">{{ fav.product.brand.name }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                {{ fav.created_at|date:"M d, Y H:i" }}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a href="{% url 'product_detail' fav.product.uuid %}" target="_blank" class="text-lux-600 hover:text-lux-700 text-xs font-bold uppercase"><i class="bi bi-box-arrow-up-right"></i> View</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="px-6 py-20 text-center text-gray-500">No favorites recorded yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Initialize bulk selection for favorites
+    window.initBulkActions('select-all', 'bulk-checkbox', 'bulk-action-form');
+</script>
+{% endblock %}

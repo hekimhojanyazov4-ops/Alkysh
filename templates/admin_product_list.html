@@ -5,9 +5,6 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto">
-    <!-- ... all the existing HTML (search, form, table, pagination) stays exactly the same ... -->
-    <!-- I'm copying the whole thing for completeness, but the only change is at the bottom -->
-    
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Platform Products</h1>
@@ -77,8 +74,8 @@
     <!-- Bulk Action Form -->
     <form method="post" action="{% url 'admin_product_bulk_action' %}" id="bulk-action-form">
         {% csrf_token %}
-        <!-- Bulk Action Toolbar (always visible) -->
-        <div class="flex items-center justify-between px-6 py-3 mb-4 border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl">
+        <!-- Bulk Action Toolbar -->
+        <div id="bulk-toolbar" class="hidden flex items-center justify-between px-6 py-3 mb-4 border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl">
             <div class="flex items-center gap-3">
                 <select name="action" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white px-3 py-2 focus:ring-lux-500 focus:border-lux-500">
                     <option value="">-- Bulk Action --</option>
@@ -101,11 +98,11 @@
                             <th class="px-6 py-4 w-10">
                                 <input type="checkbox" id="select-all" class="rounded border-gray-300 dark:border-gray-600 text-lux-600 focus:ring-lux-500">
                             </th>
-                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'name' %}" class="hover:text-gray-700 dark:hover:text-white">Product {% if request.GET.order_by == 'name' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-name' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
-                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'seller__fullname' %}" class="hover:text-gray-700 dark:hover:text-white">Seller {% if request.GET.order_by == 'seller__fullname' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-seller__fullname' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
-                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'category__name' %}" class="hover:text-gray-700 dark:hover:text-white">Category {% if request.GET.order_by == 'category__name' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-category__name' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
-                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'price' %}" class="hover:text-gray-700 dark:hover:text-white">Price {% if request.GET.order_by == 'price' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-price' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
-                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="{% url_replace 'order_by' 'available' %}" class="hover:text-gray-700 dark:hover:text-white">Status {% if request.GET.order_by == 'available' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-available' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="?{% url_replace order_by='name' %}" class="hover:text-gray-700 dark:hover:text-white">Product {% if request.GET.order_by == 'name' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-name' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="?{% url_replace order_by='seller__fullname' %}" class="hover:text-gray-700 dark:hover:text-white">Seller {% if request.GET.order_by == 'seller__fullname' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-seller__fullname' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="?{% url_replace order_by='category__name' %}" class="hover:text-gray-700 dark:hover:text-white">Category {% if request.GET.order_by == 'category__name' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-category__name' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="?{% url_replace order_by='price' %}" class="hover:text-gray-700 dark:hover:text-white">Price {% if request.GET.order_by == 'price' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-price' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"><a href="?{% url_replace order_by='available' %}" class="hover:text-gray-700 dark:hover:text-white">Status {% if request.GET.order_by == 'available' %}<i class="bi bi-caret-down-fill"></i>{% elif request.GET.order_by == '-available' %}<i class="bi bi-caret-up-fill"></i>{% endif %}</a></th>
                             <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
@@ -160,7 +157,7 @@
     <div class="mt-8">
         <nav class="flex justify-center items-center space-x-2">
             {% if products.has_previous %}
-                <a href="?page={{ products.previous_page_number }}{% url_replace_params 'page' products.previous_page_number %}"
+                <a href="?{% url_replace page=products.previous_page_number %}"
                    class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
                 </a>
@@ -170,7 +167,7 @@
                 {% if products.number == i %}
                     <span class="px-4 py-2 bg-lux-600 text-white rounded-xl font-bold shadow-md">{{ i }}</span>
                 {% elif i > products.number|add:'-3' and i < products.number|add:'3' %}
-                    <a href="?page={{ i }}{% url_replace_params 'page' i %}"
+                    <a href="?{% url_replace page=i %}"
                        class="px-4 py-2 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400 font-medium">
                         {{ i }}
                     </a>
@@ -178,7 +175,7 @@
             {% endfor %}
 
             {% if products.has_next %}
-                <a href="?page={{ products.next_page_number }}{% url_replace_params 'page' products.next_page_number %}"
+                <a href="?{% url_replace page=products.next_page_number %}"
                    class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
                 </a>
@@ -188,39 +185,82 @@
     {% endif %}
 </div>
 
-<!-- JavaScript moved inside content block – it will always execute now -->
+<!-- Bulk Actions JavaScript – definition + activation -->
 <script>
-    (function() {
-        const selectAllCheckbox = document.getElementById('select-all');
-        const checkboxes = document.querySelectorAll('.bulk-checkbox');
-        const selectedCountSpan = document.getElementById('selected-count');
+    /**
+     * Initializes bulk selection functionality.
+     * @param {Object} config
+     * @param {string} config.selectAllId - ID of the "select all" checkbox
+     * @param {string} config.checkboxClass - Class of individual item checkboxes
+     * @param {string} config.toolbarId - ID of the bulk action toolbar
+     * @param {string} config.countId - ID of the element showing selected count
+     * @param {string} config.formId - ID of the bulk action form (optional, for reset on submit)
+     */
+    function initBulkActions({ selectAllId, checkboxClass, toolbarId, countId, formId }) {
+        const selectAll = document.getElementById(selectAllId);
+        const checkboxes = document.querySelectorAll(`.${checkboxClass}`);
+        const toolbar = document.getElementById(toolbarId);
+        const countDisplay = document.getElementById(countId);
+        const form = formId ? document.getElementById(formId) : null;
 
-        function updateSelectedCount() {
-            const selected = document.querySelectorAll('.bulk-checkbox:checked').length;
-            selectedCountSpan.textContent = selected + ' selected';
+        function updateUI() {
+            const checked = document.querySelectorAll(`.${checkboxClass}:checked`);
+            const count = checked.length;
+            const allChecked = checkboxes.length > 0 && count === checkboxes.length;
+
+            // Update select-all checkbox
+            if (selectAll) {
+                selectAll.checked = allChecked;
+                selectAll.indeterminate = count > 0 && !allChecked;
+            }
+
+            // Show/hide toolbar
+            if (toolbar) {
+                toolbar.classList.toggle('hidden', count === 0);
+            }
+
+            // Update count text
+            if (countDisplay) {
+                countDisplay.textContent = `${count} selected`;
+            }
         }
 
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', function(e) {
-                checkboxes.forEach(cb => {
-                    cb.checked = e.target.checked;
-                });
-                updateSelectedCount();
+        // "Select All" checkbox handler
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                const isChecked = this.checked;
+                checkboxes.forEach(cb => { cb.checked = isChecked; });
+                updateUI();
             });
         }
 
+        // Individual checkbox handlers
         checkboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                const allChecked = document.querySelectorAll('.bulk-checkbox:checked').length === checkboxes.length;
-                if (selectAllCheckbox) {
-                    selectAllCheckbox.checked = allChecked;
-                }
-                updateSelectedCount();
-            });
+            cb.addEventListener('change', updateUI);
         });
 
-        // Initial count
-        updateSelectedCount();
-    })();
+        // Reset after form submit (to avoid stale state)
+        if (form) {
+            form.addEventListener('submit', function () {
+                setTimeout(() => {
+                    if (selectAll) selectAll.checked = false;
+                    checkboxes.forEach(cb => { cb.checked = false; });
+                    updateUI();
+                }, 10);
+            });
+        }
+
+        // Initial state
+        updateUI();
+    }
+
+    // Activate the bulk actions on this page
+    initBulkActions({
+        selectAllId: 'select-all',
+        checkboxClass: 'bulk-checkbox',
+        toolbarId: 'bulk-toolbar',
+        countId: 'selected-count',
+        formId: 'bulk-action-form'
+    });
 </script>
 {% endblock %}

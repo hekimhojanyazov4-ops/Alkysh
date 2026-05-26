@@ -7,35 +7,25 @@ from uuid import UUID
 import uuid as uuid_pkg
 from decimal import Decimal
 from datetime import timedelta
-from django.db.models import Q, OuterRef, Subquery, Exists, Case, When, Value, IntegerField
-from django.shortcuts import render
-from .models import Product, Category, ProductImage, Favorite
-from django.contrib.auth.models import User  # Şertli, esasy ulanyjy modeliňiz bolsa
+from functools import wraps
+from django.db.models import Q, OuterRef, Subquery, Exists, Case, When, Value, IntegerField, Avg, Sum, F, DecimalField, ProtectedError, Count
+from django.shortcuts import render, redirect, get_object_or_404
+from django.apps import apps
 from django.conf import settings
 from django.contrib import messages, admin
-from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth import login, authenticate, logout, get_user_model
 from django.core.mail import send_mail
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.cache import cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db import transaction, models
-from django.db.models import Q, Case, When, Value, IntegerField, Sum, F, DecimalField, ProtectedError, OuterRef, Subquery, Count
+from django.db import transaction, models as django_models
 from django.db.models.functions import TruncDate
-from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse, Http404
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
 
-from .forms import (
-    CustomUserCreationForm, CategoryForm, BrandForm, AdminProductForm,
-    ProductForm, ProductImageFormSet,
-    CartItemUpdateForm,
-    CustomAuthenticationForm,
-    ReviewForm,
-)
 from .models import (
     Category, Brand,
     Cart,
@@ -46,8 +36,17 @@ from .models import (
     ProductImage,
     Favorite,
     Payment,
-    User,
     Review,
+)
+
+User = get_user_model()
+
+from .forms import (
+    CustomUserCreationForm, CategoryForm, BrandForm, AdminProductForm,
+    ProductForm, ProductImageFormSet,
+    CartItemUpdateForm,
+    CustomAuthenticationForm,
+    ReviewForm,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,8 +58,20 @@ def customer_required(view_func):
         login_url='login',
     )(view_func)
 
+def exclude_admins(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if request.user.is_authenticated:
+            is_admin = request.user.is_staff or request.user.is_superuser or \
+                       (hasattr(request.user, 'role') and request.user.role == User.Role.ADMIN)
+            if is_admin:
+                messages.warning(request, "Access Restricted: Administrative accounts must use the Admin Portal for management tasks.")
+                return redirect('admin_dashboard')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 
-# ==================== TEXT NORMALIZATION & SEARCH (unchanged) ====================
+
+# ==================== TEXT NORMALIZATION & SEARCH ====================
 import unicodedata
 from difflib import SequenceMatcher
 
@@ -93,31 +104,10 @@ def is_similar_search(query, target):
 
 
 # ==================== HOME VIEW ====================
-
-
-from django.shortcuts import render
-from django.db.models import OuterRef, Subquery, Exists, Q, Case, When, Value, IntegerField
-from django.http import HttpResponse
-from .models import Category, Product, ProductImage, Favorite
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
-
-from django.shortcuts import render
-from django.db.models import OuterRef, Subquery, Exists, Q, Case, When, Value, IntegerField
-from django.http import HttpResponse
-from .models import Category, Product, ProductImage, Favorite
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
-
 def home(request):
     q = request.GET.get('q', '').strip()
     category_slug = request.GET.get('category')
 
-    # ---------------------------------------------------------------
-    # GUEST VIEW – return only ads, NO product/category data at all
-    # ---------------------------------------------------------------
     if not request.user.is_authenticated:
         ads = [
             {
@@ -150,51 +140,33 @@ def home(request):
             'favorite_ids': [],
             'active_category': None,
         }
-        # AJAX? Still return a safe empty grid (or 403 – see note below)
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            # For security, always reject AJAX product loads from guests
             return HttpResponse(status=403)
         return render(request, 'home.html', context)
 
-    # ---------------------------------------------------------------
-    # AUTHENTICATED VIEW – full logic (no ads)
-    # ---------------------------------------------------------------
-    # 1. Categories with at least one available product & first image
+    # Authenticated view
     first_image_qs = ProductImage.objects.filter(
         product__category=OuterRef('pk'),
         product__available=True
     ).order_by('product__created', 'id').values('image')[:1]
 
     categories = Category.objects.filter(
-        Exists(
-            Product.objects.filter(
-                category=OuterRef('pk'),
-                available=True
-            )
-        )
-    ).annotate(
-        first_image_path=Subquery(first_image_qs)
-    )
+        Exists(Product.objects.filter(category=OuterRef('pk'), available=True))
+    ).annotate(first_image_path=Subquery(first_image_qs))
 
-    # 2. Base product queryset
     products = Product.objects.filter(available=True)\
         .select_related('category', 'brand', 'seller')\
         .prefetch_related('images')\
         .annotate(review_count=Count('reviews'))
 
-    # Seller filter
     if request.user.role == User.Role.SELLER:
         products = products.filter(seller=request.user)
 
-    # Category filter
     if category_slug:
         products = products.filter(category__slug=category_slug)
 
-    # Search logic
     if q:
-        exact_matches = products.filter(
-            Q(name__iexact=q) | Q(description__icontains=q)
-        )
+        exact_matches = products.filter(Q(name__iexact=q) | Q(description__icontains=q))
         similar_matches = products.filter(
             Q(name__icontains=q) | Q(brand__name__icontains=q) | Q(category__name__icontains=q)
         ).exclude(id__in=exact_matches)
@@ -209,16 +181,9 @@ def home(request):
     else:
         products = products.order_by('-created')
 
-    # Featured products (random 8)
     featured_products = products.order_by('?')[:8] if products.exists() else []
-
-    # Active category info
     active_category = Category.objects.filter(slug=category_slug).first() if category_slug else None
-
-    # Favorites
-    favorite_ids = list(
-        Favorite.objects.filter(user=request.user).values_list('product_id', flat=True)
-    )
+    favorite_ids = list(Favorite.objects.filter(user=request.user).values_list('product_id', flat=True))
 
     context = {
         'categories': categories,
@@ -226,10 +191,9 @@ def home(request):
         'products': products,
         'favorite_ids': favorite_ids,
         'featured_products': featured_products,
-        'ads': [],   # Explicitly no ads for logged‑in users
+        'ads': [],
     }
 
-    # AJAX – only product grid, but protected
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return render(request, 'product_grid.html', context)
 
@@ -240,7 +204,6 @@ def home(request):
 def register(request):
     if request.user.is_authenticated:
         return redirect('home')
-
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST, request.FILES)
         if form.is_valid():
@@ -254,14 +217,12 @@ def register(request):
             messages.error(request, 'Please correct the errors below.')
     else:
         form = CustomUserCreationForm()
-
     return render(request, 'register.html', {'form': form})
 
 
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
-
     if request.method == 'POST':
         form = CustomAuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -272,12 +233,10 @@ def login_view(request):
                 login(request, user)
                 messages.success(request, f'Welcome back, {user.fullname}!')
                 next_url = request.GET.get('next', '')
-                
                 if not next_url or next_url == '/':
                     if user.role == User.Role.ADMIN: return redirect('admin_dashboard')
                     if user.role == User.Role.SELLER: return redirect('seller_dashboard')
                     return redirect('home')
-
                 if next_url and not url_has_allowed_host_and_scheme(
                     next_url, allowed_hosts={request.get_host()}
                 ):
@@ -287,7 +246,6 @@ def login_view(request):
             messages.error(request, 'Invalid email or password.')
     else:
         form = CustomAuthenticationForm()
-
     return render(request, 'login.html', {'form': form})
 
 
@@ -309,14 +267,7 @@ def get_or_create_cart(user):
 def cart_view(request):
     cart = get_or_create_cart(request.user)
     items = cart.items.select_related('product', 'product__brand').all()
-    form = CartItemUpdateForm()
-
-    context = {
-        'cart': cart,
-        'items': items,
-        'form': form,
-    }
-    return render(request, 'cart.html', context)
+    return render(request, 'cart.html', {'cart': cart, 'items': items, 'form': CartItemUpdateForm()})
 
 
 @login_required
@@ -336,7 +287,6 @@ def checkout(request):
 def update_cart_item(request, item_id):
     if request.method == 'POST':
         cart_item = get_object_or_404(CartItem, id=item_id, cart__customer=request.user)
-        
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             try:
                 data = json.loads(request.body)
@@ -353,13 +303,11 @@ def update_cart_item(request, item_id):
                     })
             except (json.JSONDecodeError, ValueError):
                 return JsonResponse({'success': False, 'error': 'Invalid quantity'}, status=400)
-        
         quantity = request.POST.get('quantity')
         if quantity and int(quantity) > 0:
             cart_item.quantity = int(quantity)
             cart_item.save()
             messages.success(request, 'Cart updated.')
-            
     return redirect('cart')
 
 
@@ -370,7 +318,6 @@ def remove_from_cart(request, item_id):
         cart_item = get_object_or_404(CartItem, id=item_id, cart__customer=request.user)
         product_name = cart_item.product.name
         cart_item.delete()
-
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             cart = get_or_create_cart(request.user)
             cart_count = cart.items.aggregate(total=Sum('quantity'))['total'] or 0
@@ -391,22 +338,15 @@ def remove_from_cart(request, item_id):
 def create_order(request):
     if request.method == 'POST':
         cart = get_or_create_cart(request.user)
-        # Use select_for_update to lock cart items during order creation
         cart_items = cart.items.select_related('product').select_for_update().all()
-
         if not cart_items.exists():
             messages.warning(request, 'Your cart is empty.')
             return redirect('cart')
 
         payment_method = request.POST.get('payment_method', 'Cash on Delivery')
-        
         try:
             with transaction.atomic():
-                order = Order.objects.create(
-                    customer=request.user,
-                    payment_method=payment_method
-                )
-
+                order = Order.objects.create(customer=request.user, payment_method=payment_method)
                 line_items = []
                 for cart_item in cart_items:
                     OrderItem.objects.create(
@@ -415,7 +355,6 @@ def create_order(request):
                         quantity=cart_item.quantity,
                         price=cart_item.product.effective_price,
                     )
-
                     line_items.append({
                         'price_data': {
                             'currency': 'usd',
@@ -429,7 +368,6 @@ def create_order(request):
                     stripe_key = getattr(settings, 'STRIPE_SECRET_KEY', None)
                     if not stripe_key:
                         raise ValueError("Stripe configuration missing.")
-
                     stripe.api_key = stripe_key
                     checkout_session = stripe.checkout.Session.create(
                         payment_method_types=['card'],
@@ -445,7 +383,6 @@ def create_order(request):
                     cart.items.all().delete()
                     return redirect(checkout_session.url, code=303)
 
-                # Cash on Delivery Logic
                 order.status = Order.Status.CONFIRMED
                 order.save()
                 cart.items.all().delete()
@@ -456,32 +393,27 @@ def create_order(request):
             logger.error(f"Order creation failed: {str(e)}", exc_info=True)
             messages.error(request, "There was an issue processing your order. Please try again.")
             return redirect('checkout')
-
     return redirect('cart')
 
 
-# Helper function for pagination
 def paginate_queryset(request, queryset, page_size=10):
     paginator = Paginator(queryset, page_size)
     page_number = request.GET.get('page')
     try:
-        page_obj = paginator.page(page_number)
+        return paginator.page(page_number)
     except PageNotAnInteger:
-        page_obj = paginator.page(1)
+        return paginator.page(1)
     except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages)
-    return page_obj
+        return paginator.page(paginator.num_pages)
 
-# Helper function for sorting
+
 def apply_sorting(request, queryset, default_order='-id'):
-    order_by = request.GET.get('order_by', default_order)
-    return queryset.order_by(order_by)
+    return queryset.order_by(request.GET.get('order_by', default_order))
 
 
 @login_required
 def order_list(request):
     q = request.GET.get('q', '').strip()
-    
     if request.user.role == User.Role.ADMIN:
         orders = Order.objects.select_related('customer')
     elif request.user.role == User.Role.SELLER:
@@ -492,10 +424,10 @@ def order_list(request):
         return redirect('home')
 
     orders = orders.order_by('-created_at')
-
     if q:
         orders = orders.filter(
-            Q(display_id__icontains=q) | # Search by new display_id
+            Q(display_id__icontains=q) |
+            Q(order_id__icontains=q) |
             Q(items__product__name__icontains=q) |
             Q(customer__email__icontains=q) |
             Q(customer__fullname__icontains=q)
@@ -506,9 +438,8 @@ def order_list(request):
 
 
 @login_required
+@exclude_admins
 def order_detail(request, display_id):
-    # Create a filter that checks both display_id and the internal order_id (UUID)
-    # This ensures legacy orders with null display_id can still be found via UUID
     lookup_filter = Q(display_id=display_id)
     try:
         uuid_pkg.UUID(display_id)
@@ -527,18 +458,11 @@ def order_detail(request, display_id):
     if request.user.role == User.Role.SELLER:
         items = items.filter(product__seller=request.user)
 
-    return render(request, 'order_detail.html', {
-        'order': order,
-        'items': items,
-    })
+    return render(request, 'order_detail.html', {'order': order, 'items': items})
 
 
 @login_required
 def update_order_status(request, display_id):
-    """
-    Admin or seller can manually change the order status.
-    Allowed transitions: any existing status to another (except DELIVERED is final).
-    """
     lookup_filter = Q(display_id=display_id)
     try:
         uuid_pkg.UUID(display_id)
@@ -547,26 +471,24 @@ def update_order_status(request, display_id):
         pass
 
     if request.method != 'POST':
-        return redirect('order_detail', display_id=display_id) # Use display_id
+        return redirect('order_detail', display_id=display_id)
 
     new_status = request.POST.get('status')
     if new_status not in dict(Order.Status.choices).keys():
         messages.error(request, 'Invalid status.')
-        return redirect('order_detail', display_id=display_id) # Use display_id
+        return redirect('order_detail', display_id=display_id)
 
-    # Permission check: admin can update any order; seller only orders containing his products
     if request.user.role == User.Role.ADMIN:
         order = get_object_or_404(Order, lookup_filter)
     elif request.user.role == User.Role.SELLER:
         order = get_object_or_404(Order, lookup_filter, items__product__seller=request.user)
     else:
         messages.error(request, 'You do not have permission to change order status.')
-        return redirect('order_detail', display_id=display_id) # Use display_id
+        return redirect('order_detail', display_id=display_id)
 
-    # Prevent changing delivered orders (optional)
     if order.status == Order.Status.DELIVERED:
         messages.warning(request, 'Delivered orders cannot be changed.')
-        return redirect('order_detail', display_id=display_id) # Use display_id
+        return redirect('order_detail', display_id=display_id)
 
     order.status = new_status
     if new_status == Order.Status.DELIVERED:
@@ -574,25 +496,20 @@ def update_order_status(request, display_id):
     order.save()
     messages.success(request, f'Order #{order.display_id} status updated to {order.get_status_display()}.')
     return redirect('order_detail', display_id=order.display_id)
- 
+
 
 @csrf_exempt
 def stripe_webhook(request):
-    """
-    Stripe webhook endpoint to confirm payment.
-    Expects STRIPE_WEBHOOK_SECRET in settings.
-    """
+    if request.method != 'POST':
+        return HttpResponse(status=405)
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
     webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', None)
-
     if not webhook_secret:
-        return HttpResponse(status=400)  # not configured
+        return HttpResponse(status=400)
 
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, webhook_secret
-        )
+        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
     except (ValueError, stripe.error.SignatureVerificationError) as e:
         logger.error(f"Stripe Webhook Signature Verification Failed: {str(e)}")
         return HttpResponse(status=400)
@@ -611,7 +528,7 @@ def stripe_webhook(request):
 
 
 @login_required
-@customer_required 
+@customer_required
 def confirm_order_delivery(request, display_id):
     if request.method == 'POST':
         lookup_filter = Q(display_id=display_id)
@@ -631,7 +548,7 @@ def confirm_order_delivery(request, display_id):
             order.funds_released = True
             order.save()
             messages.success(request, f"Order #{order.display_id} confirmed. Funds have been released to the seller.")
-    return redirect('order_detail', display_id=order.display_id) # Use display_id
+    return redirect('order_detail', display_id=order.display_id)
 
 
 @login_required
@@ -662,34 +579,27 @@ def favorites_list(request):
 
 
 # ==================== PRODUCT DETAIL ====================
-
 def product_detail(request, uuid):
     product_qs = Product.objects.select_related('category', 'brand', 'seller').prefetch_related('images')
     if request.user.is_authenticated and request.user.role == User.Role.SELLER:
         product_qs = product_qs.filter(seller=request.user)
     product = get_object_or_404(product_qs, uuid=uuid, available=True)
 
-    # Increment database view count safely
-    Product.objects.filter(id=product.id).update(view_count=models.F('view_count') + 1)
+    Product.objects.filter(id=product.id).update(view_count=F('view_count') + 1)
     product.refresh_from_db()
 
     effective_price = product.discount_price or product.price
     savings = product.price - product.discount_price if product.discount_price else 0
-
     reviews = product.reviews.select_related('user').all()
-    avg_rating = reviews.aggregate(models.Avg('rating'))['rating__avg'] or 0
+    avg_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
     review_form = ReviewForm()
 
-    # Degişli harytlar (düzedilen setir)
     related_products = Product.objects.filter(
         category=product.category, available=True
-    ).exclude(id=product.id)\
-    .select_related('brand')\
-    .prefetch_related('images')\
-    .annotate(review_count=Count('reviews'))\
-    .order_by('-created')[:4]
+    ).exclude(id=product.id).select_related('brand').prefetch_related('images').annotate(
+        review_count=Count('reviews')
+    ).order_by('-created')[:4]
 
-    # Soňky görlenler (üýtgedilmedi)
     recently_viewed_uuids = request.session.get('recently_viewed', [])
     current_uuid_str = str(uuid)
     if current_uuid_str in recently_viewed_uuids:
@@ -699,28 +609,23 @@ def product_detail(request, uuid):
     request.session.modified = True
 
     viewed_ids = [uid for uid in recently_viewed_uuids[1:] if uid != current_uuid_str]
+    recently_viewed = []
     if viewed_ids:
         products_map = Product.objects.filter(
             uuid__in=viewed_ids, available=True
-        ).select_related('brand')\
-        .prefetch_related('images')\
-        .annotate(review_count=Count('reviews'))\
-        .in_bulk(field_name='uuid')
-        recently_viewed = []
+        ).select_related('brand').prefetch_related('images').annotate(
+            review_count=Count('reviews')
+        ).in_bulk(field_name='uuid')
         for uid in viewed_ids:
             try:
-                product_obj = products_map[UUID(uid)]
-                recently_viewed.append(product_obj)
+                recently_viewed.append(products_map[UUID(uid)])
             except (KeyError, ValueError):
                 continue
-    else:
-        recently_viewed = []
 
     is_favorite = (
         Favorite.objects.filter(user=request.user, product=product).exists()
         if request.user.is_authenticated else False
     )
-
 
     context = {
         'product': product,
@@ -743,7 +648,6 @@ def add_review(request, product_id):
         product = get_object_or_404(Product, id=product_id, available=True)
         form = ReviewForm(request.POST)
         if form.is_valid():
-            # Check if user already reviewed this product
             if Review.objects.filter(product=product, user=request.user).exists():
                 messages.warning(request, "You have already reviewed this product.")
             else:
@@ -780,25 +684,16 @@ def add_to_cart(request, product_id):
             cart=cart, product=product, defaults={'quantity': quantity}
         )
         if not created:
-            # Use F() to prevent race conditions in quantity updates
             CartItem.objects.filter(id=cart_item.id).update(quantity=F('quantity') + quantity)
 
         message = f'{quantity} × {product.name} added to your cart.'
-
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             cart_count = cart.items.aggregate(total=Sum('quantity'))['total'] or 0
-            return JsonResponse({
-                'success': True,
-                'message': message,
-                'cart_count': cart_count,
-                'item_id': cart_item.id
-            })
+            return JsonResponse({'success': True, 'message': message, 'cart_count': cart_count, 'item_id': cart_item.id})
 
         messages.success(request, message)
         referer = request.META.get('HTTP_REFERER', '')
-        if referer:
-            return redirect(referer)
-        return redirect('cart')
+        return redirect(referer if referer else 'cart')
     return redirect('home')
 
 
@@ -831,26 +726,20 @@ def seller_dashboard(request):
     order_items = OrderItem.objects.filter(product__seller=request.user).select_related('order', 'product').annotate(
         item_revenue=F('quantity') * F('price')
     )
-
     available_revenue = order_items.filter(
-        order__status=Order.Status.DELIVERED, 
-        order__funds_released=True
+        order__status=Order.Status.DELIVERED, order__funds_released=True
     ).aggregate(total=Sum('item_revenue'))['total'] or Decimal('0.00')
-
     escrow_revenue = order_items.filter(
         order__status__in=[Order.Status.CONFIRMED, Order.Status.PROCESSING, Order.Status.SHIPPED]
     ).aggregate(total=Sum(F('quantity') * F('price')))['total'] or Decimal('0.00')
-
     total_orders = order_items.values('order').distinct().count()
     total_products = Product.objects.filter(seller=request.user).count()
     avg_order_value = available_revenue / total_orders if total_orders > 0 else Decimal('0.00')
 
     start_date = timezone.now().date() - timedelta(days=29)
     daily_sales = order_items.filter(order__created_at__date__gte=start_date) \
-        .annotate(day=TruncDate('order__created_at')) \
-        .values('day') \
-        .annotate(revenue=Sum('item_revenue')) \
-        .order_by('day')
+        .annotate(day=TruncDate('order__created_at')).values('day') \
+        .annotate(revenue=Sum('item_revenue')).order_by('day')
 
     top_products = order_items.values('product__name', 'product__available') \
         .annotate(units_sold=Sum('quantity'), revenue=Sum('item_revenue')).order_by('-units_sold')[:5]
@@ -872,10 +761,8 @@ def seller_dashboard(request):
 @login_required
 @user_passes_test(lambda u: u.role == User.Role.SELLER, login_url='login')
 def api_seller_new_orders_count(request):
-    """Returns count of active/pending orders for the seller to show in notification badges."""
     if not request.user.is_approved:
         return JsonResponse({'count': 0})
-
     count = Order.objects.filter(
         items__product__seller=request.user,
         status__in=[Order.Status.PENDING, Order.Status.CONFIRMED]
@@ -886,11 +773,8 @@ def api_seller_new_orders_count(request):
 @login_required
 @user_passes_test(lambda u: u.role == User.Role.SELLER, login_url='login')
 def withdraw_funds(request):
-    """Placeholder for withdrawal processing logic (e.g., Stripe Connect or Manual)."""
     if request.method == 'POST':
-        # Logic to mark funds as withdrawn would go here
         messages.success(request, "Withdrawal request submitted successfully. It will be processed within 3-5 business days.")
-    
     return redirect('seller_dashboard')
 
 
@@ -901,15 +785,10 @@ def seller_product_list(request):
     q = request.GET.get('q', '').strip()
     category_id = request.GET.get('category')
     status = request.GET.get('status')
-
-    if q:
-        products = products.filter(Q(name__icontains=q) | Q(description__icontains=q))
-    if category_id:
-        products = products.filter(category_id=category_id)
-    if status == 'active':
-        products = products.filter(available=True)
-    elif status == 'hidden':
-        products = products.filter(available=False)
+    if q: products = products.filter(Q(name__icontains=q) | Q(description__icontains=q))
+    if category_id: products = products.filter(category_id=category_id)
+    if status == 'active': products = products.filter(available=True)
+    elif status == 'hidden': products = products.filter(available=False)
 
     paginator = Paginator(products, 10)
     page = request.GET.get('page')
@@ -920,10 +799,9 @@ def seller_product_list(request):
     except EmptyPage:
         products = paginator.page(paginator.num_pages)
 
-    categories = Category.objects.all()
     return render(request, 'seller_product_list.html', {
         'products': products,
-        'categories': categories,
+        'categories': Category.objects.all(),
     })
 
 
@@ -932,10 +810,8 @@ def seller_product_list(request):
 def seller_product_add(request):
     if request.method == 'POST':
         form = ProductForm(request.POST)
-        # Assign the seller to the instance before validating the formset
         form.instance.seller = request.user
         formset = ProductImageFormSet(request.POST, request.FILES, instance=form.instance)
-
         if form.is_valid() and formset.is_valid():
             form.save()
             formset.save()
@@ -978,7 +854,7 @@ def seller_product_delete(request, uuid):
             product.delete()
             messages.success(request, 'Product has been removed.')
         except ProtectedError:
-            messages.error(request, f"Cannot delete '{product.name}' because it has already been ordered by customers. Please mark it as 'Hidden' instead.")
+            messages.error(request, f"Cannot delete '{product.name}' because it has already been ordered by customers.")
     return redirect('seller_product_list')
 
 
@@ -991,7 +867,6 @@ def seller_product_bulk_action(request):
         if not ids:
             messages.warning(request, "No products selected.")
             return redirect('seller_product_list')
-        
         products = Product.objects.filter(id__in=ids, seller=request.user)
         try:
             with transaction.atomic():
@@ -1005,8 +880,7 @@ def seller_product_bulk_action(request):
                     deleted_count, _ = products.delete()
                     messages.success(request, f"Successfully deleted {deleted_count} products.")
         except ProtectedError:
-            messages.error(request, "Some products cannot be deleted because they are linked to existing orders. Please hide them instead.")
-            
+            messages.error(request, "Some products cannot be deleted because they are linked to existing orders.")
     return redirect('seller_product_list')
 
 
@@ -1041,42 +915,19 @@ def export_sales_csv(request):
 
 
 # ==================== ADMIN VIEWS ====================
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_customer_list(request):
-    customers = User.objects.filter(role=User.Role.CUSTOMER).prefetch_related('orders')
-    q = request.GET.get('q', '').strip()
-
-    if q:
-        customers = customers.filter(Q(fullname__icontains=q) | Q(email__icontains=q))
-
-    customers = apply_sorting(request, customers, default_order='-id')
-    page_obj = paginate_queryset(request, customers, page_size=15)
-
-    return render(request, 'admin_customer_list.html', {'customers': page_obj, 'q': q})
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_payment_list(request):
-    payments = Payment.objects.select_related('order', 'order__customer').order_by('-paid_at')
-    status = request.GET.get('status')
-    q = request.GET.get('q', '').strip()
-
-    if status:
-        payments = payments.filter(status=status)
-
-    if q:
-        payments = payments.filter(
-            Q(id__icontains=q) |
-            Q(order__order_id__icontains=q) |
-            Q(order__customer__email__icontains=q) |
-            Q(order__customer__fullname__icontains=q)
-        ).distinct()
-
-    payments = apply_sorting(request, payments, default_order='-paid_at')
-    page_obj = paginate_queryset(request, payments, page_size=15)
-    return render(request, 'admin_payment_list.html', {'payments': page_obj, 'q': q, 'status': status})
+def _get_admin_registry_data():
+    registry = admin.site._registry
+    data = {}
+    for model_cls in registry:
+        app_label = model_cls._meta.app_label
+        if app_label not in data:
+            data[app_label] = []
+        data[app_label].append({
+            'model_name': model_cls._meta.model_name,
+            'verbose_name': model_cls._meta.verbose_name_plural.capitalize(),
+            'app_label': app_label,
+        })
+    return data
 
 
 @login_required
@@ -1093,42 +944,26 @@ def admin_dashboard(request):
     total_customers = User.objects.filter(role=User.Role.CUSTOMER).count()
     total_sellers = User.objects.filter(role=User.Role.SELLER, is_approved=True).count()
 
-    # Revenue trend for the last 30 days
     start_date = timezone.now().date() - timedelta(days=29)
     daily_sales = OrderItem.objects.filter(order__created_at__date__gte=start_date) \
-        .annotate(day=TruncDate('order__created_at')) \
-        .values('day') \
-        .annotate(revenue=Sum(F('quantity') * F('price'))) \
-        .order_by('day')
+        .annotate(day=TruncDate('order__created_at')).values('day') \
+        .annotate(revenue=Sum(F('quantity') * F('price'))).order_by('day')
 
     top_sellers = User.objects.filter(role=User.Role.SELLER, is_approved=True) \
         .annotate(revenue=Sum(F('products__orderitem__quantity') * F('products__orderitem__price'))) \
         .order_by('-revenue')[:5]
 
-    # ---- Order Progress Data (for donut chart) ----
-    # Get counts per status from the database
     order_status_counts = Order.objects.values('status').annotate(count=Count('id'))
     status_dict = {entry['status']: entry['count'] for entry in order_status_counts}
-
-    # Ensure all possible statuses are included, even if count is zero
     all_statuses = [
-        Order.Status.PENDING,
-        Order.Status.CONFIRMED,
-        Order.Status.PROCESSING,
-        Order.Status.SHIPPED,
-        Order.Status.DELIVERED,
-        Order.Status.CANCELLED,
+        Order.Status.PENDING, Order.Status.CONFIRMED, Order.Status.PROCESSING,
+        Order.Status.SHIPPED, Order.Status.DELIVERED, Order.Status.CANCELLED,
     ]
-    # Human‑friendly labels matching your model's choices
     status_labels = {
-        Order.Status.PENDING: 'Pending',
-        Order.Status.CONFIRMED: 'Confirmed',
-        Order.Status.PROCESSING: 'Processing',
-        Order.Status.SHIPPED: 'Shipped',
-        Order.Status.DELIVERED: 'Delivered',
-        Order.Status.CANCELLED: 'Cancelled',
+        Order.Status.PENDING: 'Pending', Order.Status.CONFIRMED: 'Confirmed',
+        Order.Status.PROCESSING: 'Processing', Order.Status.SHIPPED: 'Shipped',
+        Order.Status.DELIVERED: 'Delivered', Order.Status.CANCELLED: 'Cancelled',
     }
-
     progress_labels = [status_labels[s] for s in all_statuses]
     progress_data = [status_dict.get(s, 0) for s in all_statuses]
 
@@ -1142,129 +977,27 @@ def admin_dashboard(request):
         'chart_labels': [d['day'].strftime('%b %d') for d in daily_sales],
         'chart_data': [float(d['revenue'] or 0) for d in daily_sales],
         'top_sellers': top_sellers,
-        # New progress data
         'progress_labels': json.dumps(progress_labels),
         'progress_data': json.dumps(progress_data),
+        'admin_registry': _get_admin_registry_data(),
     }
     return render(request, 'admin_dashboard.html', context)
 
 
 @login_required
 @user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_seller_management(request):
-    # Search
-    q = request.GET.get('q', '').strip()
-    pending_sellers = User.objects.filter(role=User.Role.SELLER, is_approved=False)
-    approved_sellers = User.objects.filter(role=User.Role.SELLER, is_approved=True)
-
-    if q:
-        search_filter = Q(fullname__icontains=q) | Q(email__icontains=q)
-        pending_sellers = pending_sellers.filter(search_filter)
-        approved_sellers = approved_sellers.filter(search_filter)
-
-    # Sorting
-    pending_sellers = apply_sorting(request, pending_sellers, default_order='-id')
-    approved_sellers = apply_sorting(request, approved_sellers, default_order='-id')
-
-    # Pagination
-    pending_page_obj = paginate_queryset(request, pending_sellers, page_size=5)
-    approved_page_obj = paginate_queryset(request, approved_sellers, page_size=10)
-
-    return render(request, 'admin_seller_management.html', {'pending_sellers': pending_page_obj, 'approved_sellers': approved_page_obj, 'q': q})
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def approve_seller(request, user_id):
-    seller = get_object_or_404(User, id=user_id, role=User.Role.SELLER)
-    seller.is_approved = True
-    seller.save()
-    subject = 'Welcome to LuxMarket - Your Seller Account is Approved!'
-    message = f'Hello {seller.fullname},\n\nYour identity verification document has been reviewed and your seller account is now approved. You can now access your dashboard and start listing products.\n\nBest regards,\nThe LuxMarket Team'
-    try:
-        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [seller.email])
-    except Exception as e:
-        logger.error(f"Failed to send approval email to {seller.email}: {e}")
-        messages.warning(request, "Seller approved, but notification email failed to send.")
-    messages.success(request, f"Seller {seller.fullname} has been approved.")
-    return redirect('admin_seller_management')
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def reject_seller(request, user_id):
-    seller = get_object_or_404(User, id=user_id, role=User.Role.SELLER)
-    seller.is_active = False 
-    seller.save()
-    subject = 'Update on your LuxMarket Seller Application'
-    message = f'Hello {seller.fullname},\n\nWe regret to inform you that your seller application has been rejected after reviewing your identity verification documents. Your account has been deactivated.\n\nIf you believe this is an error, please contact support.\n\nBest regards,\nThe LuxMarket Team'
-    try:
-        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [seller.email])
-    except Exception as e:
-        logger.error(f"Failed to send rejection email to {seller.email}: {e}")
-        messages.warning(request, "Seller rejected, but notification email failed to send.")
-    messages.warning(request, f"Seller {seller.fullname} application was rejected and account deactivated.")
-    return redirect('admin_seller_management')
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def export_payments_csv(request):
-    """Exports the filtered payment list to a CSV file."""
-    payments = Payment.objects.select_related('order', 'order__customer').order_by('-paid_at')
-    status = request.GET.get('status')
-    q = request.GET.get('q', '').strip()
-
-    if status:
-        payments = payments.filter(status=status)
-
-    if q:
-        payments = payments.filter(
-            Q(id__icontains=q) |
-            Q(order__order_id__icontains=q) |
-            Q(order__customer__email__icontains=q) |
-            Q(order__customer__fullname__icontains=q)
-        ).distinct()
-
-    response = HttpResponse(content_type='text/csv')
-    filename = f"payments_report_{timezone.now().strftime('%Y%m%d_%H%M')}.csv"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-
-    writer = csv.writer(response)
-    writer.writerow(['Transaction ID', 'Order Number', 'Customer', 'Email', 'Amount', 'Status', 'Date']) # Updated header
-    
-    for p in payments:
-        writer.writerow([
-            p.id,
-            p.order.order_id,
-            p.order.customer.fullname,
-            p.order.customer.email,
-            p.amount,
-            p.get_status_display(),
-            p.paid_at.strftime('%Y-%m-%d %H:%M')
-        ])
-
-    return response
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
 def admin_log_viewer(request):
-    """Reads and displays the last 100 lines of the Stripe error log."""
     log_file_path = os.path.join(settings.BASE_DIR, 'logs', 'stripe_errors.log')
     lines = []
-    
     try:
         if os.path.exists(log_file_path):
             with open(log_file_path, 'r') as f:
-                # Get last 100 lines and reverse them (newest first)
                 lines = f.readlines()[-100:]
                 lines.reverse()
         else:
             lines = ["Log file has not been created yet. No errors recorded."]
     except Exception as e:
         lines = [f"Error reading log file: {str(e)}"]
-
     return render(request, 'admin_log_viewer.html', {
         'logs': lines,
         'log_filename': 'stripe_errors.log'
@@ -1273,207 +1006,133 @@ def admin_log_viewer(request):
 
 @login_required
 @user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_brand_list(request):
-    brands = Brand.objects.all().order_by('name')
-    return render(request, 'admin_brand_list.html', {'brands': brands})
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_brand_add(request):
+def admin_reset_password(request, user_id):
+    target_user = get_object_or_404(User, id=user_id)
     if request.method == 'POST':
-        form = BrandForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Brand created successfully.")
-            return redirect('admin_brand_list')
-    else:
-        form = BrandForm()
-    return render(request, 'admin_brand_form.html', {'form': form, 'title': 'Add Brand'})
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_brand_edit(request, pk):
-    brand = get_object_or_404(Brand, pk=pk)
-    if request.method == 'POST':
-        form = BrandForm(request.POST, request.FILES, instance=brand)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Brand updated successfully.")
-            return redirect('admin_brand_list')
-    else:
-        form = BrandForm(instance=brand)
-    return render(request, 'admin_brand_form.html', {'form': form, 'title': 'Edit Brand'})
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_brand_delete(request, pk):
-    brand = get_object_or_404(Brand, pk=pk)
-    if request.method == 'POST':
+        new_password = request.POST.get('new_password', '').strip()
+        if not new_password:
+            messages.error(request, "Password cannot be empty.")
+            return redirect('admin_reset_password', user_id=user_id)
+        if len(new_password) < 8:
+            messages.error(request, "Password must be at least 8 characters.")
+            return redirect('admin_reset_password', user_id=user_id)
+        target_user.set_password(new_password)
+        target_user.save()
         try:
-            brand.delete()
-            messages.success(request, "Brand deleted successfully.")
-        except ProtectedError:
-            messages.error(request, "Cannot delete brand as it is linked to existing products.")
-    return redirect('admin_brand_list')
+            send_mail(
+                subject='Your password has been reset by an administrator',
+                message=f'Hello {target_user.fullname},\n\nYour account password has been reset.\nYour new password is: {new_password}\n\nPlease log in and change it immediately.\n\nBest regards,\nLuxMarket Team',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[target_user.email],
+                fail_silently=True,
+            )
+            messages.success(request, f"Password for {target_user.email} has been reset and emailed.")
+        except Exception:
+            messages.success(request, f"Password for {target_user.email} has been reset (email notification failed).")
+        return redirect(request.META.get('HTTP_REFERER', 'admin_customer_list'))
+    return render(request, 'admin_reset_password.html', {'target_user': target_user})
 
+
+# ==================== BULK ACTIONS ====================
 
 @login_required
 @user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_product_add(request):
+def admin_seller_bulk_action(request):
     if request.method == 'POST':
-        form = AdminProductForm(request.POST) # Use AdminProductForm
-        formset = ProductImageFormSet(request.POST, request.FILES, instance=form.instance)
-
-        if form.is_valid() and formset.is_valid():
-            form.save()
-            formset.save()
-            messages.success(request, 'Product added successfully.')
-            return redirect('admin_product_list')
-    else:
-        form = AdminProductForm() # Use AdminProductForm
-        formset = ProductImageFormSet()
-    return render(request, 'seller_product_form.html', { # Reusing seller_product_form.html
-        'form': form, 'formset': formset, 'title': 'Add New Product'
-    })
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_product_edit(request, uuid):
-    product = get_object_or_404(Product, uuid=uuid) # Admin can edit any product, no seller filter
-    if request.method == 'POST':
-        form = AdminProductForm(request.POST, instance=product) # Use AdminProductForm
-        formset = ProductImageFormSet(request.POST, request.FILES, instance=product)
-        if form.is_valid() and formset.is_valid():
-            form.save()
-            formset.save()
-            messages.success(request, 'Product updated successfully.')
-            return redirect('admin_product_list')
-    else:
-        form = AdminProductForm(instance=product) # Use AdminProductForm
-        formset = ProductImageFormSet(instance=product)
-    return render(request, 'seller_product_form.html', { # Reusing seller_product_form.html
-        'form': form, 'formset': formset, 'title': 'Edit Product', 'product': product
-    })
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_category_list(request):
-    categories = Category.objects.all().order_by('name')
-    return render(request, 'admin_category_list.html', {'categories': categories})
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_category_add(request):
-    if request.method == 'POST':
-        form = CategoryForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Category created successfully.")
-            return redirect('admin_category_list')
-    else:
-        form = CategoryForm()
-    return render(request, 'admin_category_form.html', {'form': form, 'title': 'Add Category'})
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_category_edit(request, pk):
-    category = get_object_or_404(Category, pk=pk)
-    if request.method == 'POST':
-        form = CategoryForm(request.POST, instance=category)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Category updated successfully.")
-            return redirect('admin_category_list')
-    else:
-        form = CategoryForm(instance=category)
-    return render(request, 'admin_category_form.html', {'form': form, 'title': 'Edit Category'})
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_category_delete(request, pk):
-    category = get_object_or_404(Category, pk=pk)
-    if request.method == 'POST':
+        ids = request.POST.getlist('ids')
+        action = request.POST.get('action')
+        if not ids:
+            messages.warning(request, "Hiç bir satyjy saýlanmady.")
+            return redirect('admin_seller_management')
+        sellers = User.objects.filter(id__in=ids, role=User.Role.SELLER)
         try:
-            category.delete()
-            messages.success(request, "Category deleted successfully.")
+            with transaction.atomic():
+                if action == 'approve':
+                    count = sellers.update(is_approved=True)
+                    messages.success(request, f"{count} sany satyjy tassyklandy.")
+                elif action == 'reject':
+                    count = sellers.update(is_active=False)
+                    messages.warning(request, f"{count} sany satyjy hasaby ýapyldy.")
+                elif action == 'delete':
+                    deleted, _ = sellers.delete()
+                    messages.success(request, f"{deleted} sany satyjy öçürildi.")
+                else:
+                    messages.error(request, "Nädogry hereket.")
         except ProtectedError:
-            messages.error(request, "Cannot delete category as it is linked to existing products.")
-    return redirect('admin_category_list')
+            messages.error(request, "Käbir satyjylaryň önümleri ýa-da sargytlary bar, olary öçürip bolmaýar.")
+        except Exception as e:
+            messages.error(request, f"Ýalňyşlyk ýüze çykdy: {str(e)}")
+    return redirect('admin_seller_management')
 
 
 @login_required
 @user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_product_list(request):
-    products = Product.objects.select_related('category', 'seller', 'brand').prefetch_related('images')
-    q = request.GET.get('q', '').strip()
-    category_id = request.GET.get('category')
-    seller_id = request.GET.get('seller')
-    brand_id = request.GET.get('brand')
-    status = request.GET.get('status')
-
-    if q:
-        products = products.filter(Q(name__icontains=q) | Q(seller__fullname__icontains=q) | Q(brand__name__icontains=q))
-    if category_id:
-        products = products.filter(category_id=category_id)
-    if seller_id:
-        products = products.filter(seller_id=seller_id)
-    if brand_id:
-        products = products.filter(brand_id=brand_id)
-    if status == 'active':
-        products = products.filter(available=True)
-    elif status == 'hidden':
-        products = products.filter(available=False)
-
-    products = apply_sorting(request, products, default_order='-created')
-    page_obj = paginate_queryset(request, products, page_size=10)
-
-    categories = Category.objects.all()
-    sellers = User.objects.filter(role=User.Role.SELLER, is_approved=True)
-    brands = Brand.objects.all()
-
-    return render(request, 'admin_product_list.html', {
-        'products': page_obj,
-        'categories': categories,
-        'sellers': sellers,
-        'brands': brands,
-        'q': q,
-        'selected_category': category_id,
-        'selected_seller': seller_id,
-        'selected_brand': brand_id,
-        'selected_status': status,
-    })
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_product_toggle_availability(request, uuid):
-    product = get_object_or_404(Product, uuid=uuid)
-    product.available = not product.available
-    product.save()
-    status = "Active" if product.available else "Hidden"
-    messages.success(request, f"Product '{product.name}' is now {status}.")
-    return redirect('admin_product_list')
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_product_delete(request, uuid):
-    product = get_object_or_404(Product, uuid=uuid)
+def admin_customer_bulk_action(request):
     if request.method == 'POST':
+        ids = request.POST.getlist('ids')
+        action = request.POST.get('action')
+        if not ids:
+            messages.warning(request, "Hiç bir müşderi saýlanmady.")
+            return redirect('admin_customer_list')
+        customers = User.objects.filter(id__in=ids, role=User.Role.CUSTOMER)
         try:
-            product.delete()
-            messages.success(request, f"Product '{product.name}' has been deleted.")
+            with transaction.atomic():
+                if action == 'activate':
+                    count = customers.update(is_active=True)
+                    messages.success(request, f"{count} sany müşderi hasaby işjeňleşdirildi.")
+                elif action == 'deactivate':
+                    count = customers.update(is_active=False)
+                    messages.warning(request, f"{count} sany müşderi hasaby ýapyldy.")
+                elif action == 'delete':
+                    deleted, _ = customers.delete()
+                    messages.success(request, f"{deleted} sany müşderi hasaby öçürildi.")
+                else:
+                    messages.error(request, "Nädogry hereket.")
         except ProtectedError:
-            messages.error(request, f"Cannot delete '{product.name}' because it has already been ordered by customers. Consider toggling it to 'Hidden' instead.")
-    return redirect('admin_product_list')
+            messages.error(request, "Käbir müşderileriň sargytlary bar, öçürip bolmaýar.")
+        except Exception as e:
+            messages.error(request, f"Ýalňyşlyk ýüze çykdy: {str(e)}")
+    return redirect('admin_customer_list')
+
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_review_bulk_action(request):
+    if request.method == 'POST':
+        ids = request.POST.getlist('ids')
+        if not ids:
+            messages.warning(request, "Hiç bir syn saýlanmady.")
+            return redirect('admin_review_list')
+        if request.POST.get('action') == 'delete':
+            try:
+                with transaction.atomic():
+                    deleted, _ = Review.objects.filter(id__in=ids).delete()
+                    messages.success(request, f"{deleted} sany syn öçürildi.")
+            except Exception as e:
+                messages.error(request, f"Öçürmekde säwlik: {str(e)}")
+        else:
+            messages.error(request, "Nädogry hereket.")
+    return redirect('admin_review_list')
+
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_favorite_bulk_action(request):
+    if request.method == 'POST':
+        ids = request.POST.getlist('ids')
+        if not ids:
+            messages.warning(request, "Hiç bir halanan ýazgysy saýlanmady.")
+            return redirect('admin_favorite_list')
+        if request.POST.get('action') == 'delete':
+            try:
+                with transaction.atomic():
+                    deleted, _ = Favorite.objects.filter(id__in=ids).delete()
+                    messages.success(request, f"{deleted} sany halanan önüm aýryldy.")
+            except Exception as e:
+                messages.error(request, f"Öçürmekde säwlik: {str(e)}")
+        else:
+            messages.error(request, "Nädogry hereket.")
+    return redirect('admin_favorite_list')
 
 
 @login_required
@@ -1485,7 +1144,6 @@ def admin_product_bulk_action(request):
         if not ids:
             messages.warning(request, "No products selected.")
             return redirect('admin_product_list')
-        
         products = Product.objects.filter(id__in=ids)
         try:
             with transaction.atomic():
@@ -1496,11 +1154,10 @@ def admin_product_bulk_action(request):
                     count = products.update(available=False)
                     messages.success(request, f"Hidden {count} products.")
                 elif action == 'delete':
-                    deleted_count, _ = products.delete()
-                    messages.success(request, f"Deleted {deleted_count} products.")
+                    deleted, _ = products.delete()
+                    messages.success(request, f"Deleted {deleted} products.")
         except ProtectedError:
-            messages.error(request, "Deletion failed: Some products are referenced in customer orders.")
-            
+            messages.error(request, "Some products could not be deleted because they are linked to orders.")
     return redirect('admin_product_list')
 
 
@@ -1510,13 +1167,12 @@ def admin_category_bulk_action(request):
     if request.method == 'POST':
         ids = request.POST.getlist('ids')
         if request.POST.get('action') == 'delete':
-            categories = Category.objects.filter(id__in=ids)
             try:
                 with transaction.atomic():
-                    deleted_count, _ = categories.delete()
-                    messages.success(request, f"Deleted {deleted_count} categories.")
+                    Category.objects.filter(id__in=ids).delete()
+                    messages.success(request, "Categories deleted.")
             except ProtectedError:
-                messages.error(request, "Cannot delete categories that contain products.")
+                messages.error(request, "Cannot delete some categories because they contain products.")
     return redirect('admin_category_list')
 
 
@@ -1526,83 +1182,13 @@ def admin_brand_bulk_action(request):
     if request.method == 'POST':
         ids = request.POST.getlist('ids')
         if request.POST.get('action') == 'delete':
-            brands = Brand.objects.filter(id__in=ids)
             try:
                 with transaction.atomic():
-                    deleted_count, _ = brands.delete()
-                    messages.success(request, f"Deleted {deleted_count} brands.")
+                    Brand.objects.filter(id__in=ids).delete()
+                    messages.success(request, "Brands deleted.")
             except ProtectedError:
-                messages.error(request, "Cannot delete brands linked to existing products.")
+                messages.error(request, "Cannot delete some brands because they are linked to products.")
     return redirect('admin_brand_list')
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_seller_bulk_action(request):
-    if request.method == 'POST':
-        ids = request.POST.getlist('ids')
-        action = request.POST.get('action')
-        sellers = User.objects.filter(id__in=ids, role=User.Role.SELLER)
-        try:
-            with transaction.atomic():
-                if action == 'approve':
-                    count = sellers.update(is_approved=True)
-                    messages.success(request, f"Approved {count} sellers.")
-                elif action == 'reject':
-                    count = sellers.update(is_active=False)
-                    messages.warning(request, f"Deactivated {count} seller accounts.")
-                elif action == 'delete':
-                    deleted_count, _ = sellers.delete()
-                    messages.success(request, f"Removed {deleted_count} sellers.")
-        except ProtectedError:
-            messages.error(request, "Some sellers have active products or orders and cannot be deleted.")
-            
-    return redirect('admin_seller_management')
-
-
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_seller_delete(request, user_id):
-    seller = get_object_or_404(User, id=user_id, role=User.Role.SELLER)
-    if request.method == 'POST':
-        try:
-            seller.delete()
-            messages.success(request, f"Seller '{seller.fullname}' has been deleted.")
-        except ProtectedError:
-            messages.error(request, f"Cannot delete seller '{seller.fullname}' because they have active products or orders. Please remove their products first or deactivate their account.")
-    return redirect('admin_seller_management')
-
-
-# ==================== TÄZE: Admin Customer Bulk Action ====================
-@login_required
-@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_customer_bulk_action(request):
-    if request.method == 'POST':
-        ids = request.POST.getlist('ids')
-        action = request.POST.get('action')
-        if not ids:
-            messages.warning(request, "No customers selected.")
-            return redirect('admin_customer_list')
-        
-        customers = User.objects.filter(id__in=ids, role=User.Role.CUSTOMER)
-        try:
-            with transaction.atomic():
-                if action == 'activate':
-                    count = customers.update(is_active=True)
-                    messages.success(request, f"{count} sany müşderi hasaby işjeňleşdirildi.")
-                elif action == 'deactivate':
-                    count = customers.update(is_active=False)
-                    messages.success(request, f"{count} sany müşderi hasaby ýapyldy.")
-                elif action == 'delete':
-                    deleted_count, _ = customers.delete()
-                    messages.success(request, f"{deleted_count} sany müşderi hasaby öçürildi.")
-                else:
-                    messages.error(request, "Nädogry amal.")
-        except ProtectedError:
-            messages.error(request, "Käbir müşderileriň sargytlary bar, öçürip bolmaýar.")
-        except Exception as e:
-            messages.error(request, f"Ýalňyşlyk: {str(e)}")
-    return redirect('admin_customer_list')
 
 
 @login_required
@@ -1620,11 +1206,10 @@ def admin_order_bulk_action(request):
                         orders.update(funds_released=True)
                     messages.success(request, f"Updated {count} orders to {action}.")
                 elif action == 'delete':
-                    deleted_count, _ = orders.delete()
-                    messages.success(request, f"Deleted {deleted_count} order records.")
+                    deleted, _ = orders.delete()
+                    messages.success(request, f"Deleted {deleted} order records.")
         except ProtectedError:
-            messages.error(request, "Some orders are protected by payment records and cannot be deleted.")
-            
+            messages.error(request, "Some orders are protected by payment records.")
     return redirect('order_list')
 
 
@@ -1634,15 +1219,16 @@ def admin_payment_bulk_action(request):
     if request.method == 'POST':
         ids = request.POST.getlist('ids')
         if request.POST.get('action') == 'delete':
-            payments = Payment.objects.filter(id__in=ids)
             try:
                 with transaction.atomic():
-                    deleted_count, _ = payments.delete()
-                    messages.success(request, f"Deleted {deleted_count} payment records.")
-            except ProtectedError:
-                messages.error(request, "One or more payment records are protected.")
+                    Payment.objects.filter(id__in=ids).delete()
+                    messages.success(request, "Payment records deleted.")
+            except Exception as e:
+                messages.error(request, f"Error: {str(e)}")
     return redirect('admin_payment_list')
 
+
+# ==================== API BULK SUMMARY ====================
 
 @login_required
 @user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
@@ -1651,7 +1237,6 @@ def api_admin_bulk_summary(request):
     Provides a dynamic aggregation of products selected for bulk action.
     Optimized using GROUP BY at the database level to prevent N+1 issues.
     """
-    # Retrieve IDs from query parameters (e.g., ?ids=1,2,3)
     raw_ids = request.GET.get('ids', '').split(',')
     product_ids = [pid for pid in raw_ids if pid.isdigit()]
 
@@ -1662,15 +1247,12 @@ def api_admin_bulk_summary(request):
             'brands': []
         })
 
-    # Base queryset for selected products
     selection = Product.objects.filter(id__in=product_ids)
 
-    # Aggregate counts by Category - Performs an efficient SQL GROUP BY
     category_counts = list(selection.values(name=F('category__name'))
                            .annotate(count=Count('id'))
                            .order_by('-count'))
 
-    # Aggregate counts by Brand - Performs an efficient SQL GROUP BY
     brand_counts = list(selection.values(name=F('brand__name'))
                         .annotate(count=Count('id'))
                         .order_by('-count'))
@@ -1682,52 +1264,315 @@ def api_admin_bulk_summary(request):
     })
 
 
+# ==================== STANDARD ADMIN LIST VIEWS ====================
+
 @login_required
 @user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
-def admin_reset_password(request, user_id):
-    target_user = get_object_or_404(User, id=user_id)
+def admin_customer_list(request):
+    customers = User.objects.filter(role=User.Role.CUSTOMER).prefetch_related('orders')
+    q = request.GET.get('q', '').strip()
+    if q: customers = customers.filter(Q(fullname__icontains=q) | Q(email__icontains=q))
+    customers = apply_sorting(request, customers, default_order='-id')
+    page_obj = paginate_queryset(request, customers, page_size=15)
+    return render(request, 'admin_customer_list.html', {'customers': page_obj, 'q': q})
 
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_payment_list(request):
+    payments = Payment.objects.select_related('order', 'order__customer').order_by('-paid_at')
+    status = request.GET.get('status')
+    q = request.GET.get('q', '').strip()
+    if status: payments = payments.filter(status=status)
+    if q: payments = payments.filter(Q(id__icontains=q) | Q(order__order_id__icontains=q) | Q(order__customer__email__icontains=q) | Q(order__customer__fullname__icontains=q)).distinct()
+    payments = apply_sorting(request, payments, default_order='-paid_at')
+    page_obj = paginate_queryset(request, payments, page_size=15)
+    return render(request, 'admin_payment_list.html', {'payments': page_obj, 'q': q, 'status': status})
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_seller_management(request):
+    q = request.GET.get('q', '').strip()
+    pending_sellers = User.objects.filter(role=User.Role.SELLER, is_approved=False)
+    approved_sellers = User.objects.filter(role=User.Role.SELLER, is_approved=True)
+    if q:
+        search_filter = Q(fullname__icontains=q) | Q(email__icontains=q)
+        pending_sellers = pending_sellers.filter(search_filter)
+        approved_sellers = approved_sellers.filter(search_filter)
+    pending_sellers = apply_sorting(request, pending_sellers, default_order='-id')
+    approved_sellers = apply_sorting(request, approved_sellers, default_order='-id')
+    pending_page_obj = paginate_queryset(request, pending_sellers, page_size=5)
+    approved_page_obj = paginate_queryset(request, approved_sellers, page_size=10)
+    return render(request, 'admin_seller_management.html', {'pending_sellers': pending_page_obj, 'approved_sellers': approved_page_obj, 'q': q})
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def approve_seller(request, user_id):
+    seller = get_object_or_404(User, id=user_id, role=User.Role.SELLER)
+    seller.is_approved = True
+    seller.save()
+    messages.success(request, f"Seller {seller.fullname} has been approved.")
+    return redirect('admin_seller_management')
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def reject_seller(request, user_id):
+    seller = get_object_or_404(User, id=user_id, role=User.Role.SELLER)
+    seller.is_active = False
+    seller.save()
+    messages.warning(request, f"Seller {seller.fullname} rejected and deactivated.")
+    return redirect('admin_seller_management')
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def export_payments_csv(request):
+    payments = Payment.objects.all()
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="payments.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['ID', 'Order', 'Amount', 'Status', 'Date'])
+    for p in payments:
+        writer.writerow([p.id, p.order.display_id, p.amount, p.status, p.paid_at])
+    return response
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_brand_list(request):
+    brands = Brand.objects.all().order_by('name')
+    return render(request, 'admin_brand_list.html', {'brands': brands})
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_brand_add(request):
     if request.method == 'POST':
-        new_password = request.POST.get('new_password', '').strip()
-        if not new_password:
-            messages.error(request, "Password cannot be empty.")
-            return redirect('admin_reset_password', user_id=user_id)
+        form = BrandForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Brand created successfully.")
+            return redirect('admin_brand_list')
+    else:
+        form = BrandForm()
+    return render(request, 'admin_brand_form.html', {'form': form, 'title': 'Add Brand'})
 
-        # (optional) enforce minimum length or Django’s password validators
-        if len(new_password) < 8:
-            messages.error(request, "Password must be at least 8 characters.")
-            return redirect('admin_reset_password', user_id=user_id)
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_brand_edit(request, pk):
+    brand = get_object_or_404(Brand, pk=pk)
+    if request.method == 'POST':
+        form = BrandForm(request.POST, request.FILES, instance=brand)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Brand updated.")
+            return redirect('admin_brand_list')
+    else:
+        form = BrandForm(instance=brand)
+    return render(request, 'admin_brand_form.html', {'form': form, 'title': 'Edit Brand'})
 
-        target_user.set_password(new_password)
-        target_user.save()
-
-        # Optionally send the new password to the user via email
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_brand_delete(request, pk):
+    brand = get_object_or_404(Brand, pk=pk)
+    if request.method == 'POST':
         try:
-            send_mail(
-                subject='Your password has been reset by an administrator',
-                message=f'Hello {target_user.fullname},\n\n'
-                        f'Your account password has been reset.\n'
-                        f'Your new password is: {new_password}\n\n'
-                        f'Please log in and change it immediately.\n\n'
-                        f'Best regards,\nLuxMarket Team',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[target_user.email],
-                fail_silently=True,
-            )
-            messages.success(request, f"Password for {target_user.email} has been reset and emailed.")
-        except Exception:
-            messages.success(request, f"Password for {target_user.email} has been reset (email notification failed).")
+            brand.delete()
+            messages.success(request, "Brand deleted.")
+        except ProtectedError:
+            messages.error(request, "Cannot delete brand because it has products.")
+    return redirect('admin_brand_list')
 
-        return redirect(request.META.get('HTTP_REFERER', 'admin_customer_list'))
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_category_list(request):
+    categories = Category.objects.all().order_by('name')
+    return render(request, 'admin_category_list.html', {'categories': categories})
 
-    return render(request, 'admin_reset_password.html', {
-        'target_user': target_user,
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_category_add(request):
+    if request.method == 'POST':
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Category created.")
+            return redirect('admin_category_list')
+    else:
+        form = CategoryForm()
+    return render(request, 'admin_category_form.html', {'form': form, 'title': 'Add Category'})
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_category_edit(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+    if request.method == 'POST':
+        form = CategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Category updated.")
+            return redirect('admin_category_list')
+    else:
+        form = CategoryForm(instance=category)
+    return render(request, 'admin_category_form.html', {'form': form, 'title': 'Edit Category'})
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_category_delete(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+    if request.method == 'POST':
+        try:
+            category.delete()
+            messages.success(request, "Category deleted.")
+        except ProtectedError:
+            messages.error(request, "Cannot delete category because it has products.")
+    return redirect('admin_category_list')
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_product_list(request):
+    products = Product.objects.select_related('category', 'seller', 'brand').prefetch_related('images')
+    q = request.GET.get('q', '').strip()
+    category_id = request.GET.get('category')
+    seller_id = request.GET.get('seller')
+    brand_id = request.GET.get('brand')
+    status = request.GET.get('status')
+    if q: products = products.filter(Q(name__icontains=q) | Q(seller__fullname__icontains=q) | Q(brand__name__icontains=q))
+    if category_id: products = products.filter(category_id=category_id)
+    if seller_id: products = products.filter(seller_id=seller_id)
+    if brand_id: products = products.filter(brand_id=brand_id)
+    if status == 'active': products = products.filter(available=True)
+    elif status == 'hidden': products = products.filter(available=False)
+    products = apply_sorting(request, products, default_order='-created')
+    page_obj = paginate_queryset(request, products, page_size=10)
+    return render(request, 'admin_product_list.html', {
+        'products': page_obj,
+        'categories': Category.objects.all(),
+        'sellers': User.objects.filter(role=User.Role.SELLER, is_approved=True),
+        'brands': Brand.objects.all(),
+        'q': q,
     })
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_product_add(request):
+    if request.method == 'POST':
+        form = AdminProductForm(request.POST)
+        formset = ProductImageFormSet(request.POST, request.FILES, instance=form.instance)
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
+            messages.success(request, 'Product added.')
+            return redirect('admin_product_list')
+    else:
+        form = AdminProductForm()
+        formset = ProductImageFormSet()
+    return render(request, 'seller_product_form.html', {'form': form, 'formset': formset, 'title': 'Add Product'})
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_product_edit(request, uuid):
+    product = get_object_or_404(Product, uuid=uuid)
+    if request.method == 'POST':
+        form = AdminProductForm(request.POST, instance=product)
+        formset = ProductImageFormSet(request.POST, request.FILES, instance=product)
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
+            messages.success(request, 'Product updated.')
+            return redirect('admin_product_list')
+    else:
+        form = AdminProductForm(instance=product)
+        formset = ProductImageFormSet(instance=product)
+    return render(request, 'seller_product_form.html', {'form': form, 'formset': formset, 'title': 'Edit Product', 'product': product})
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_product_toggle_availability(request, uuid):
+    product = get_object_or_404(Product, uuid=uuid)
+    product.available = not product.available
+    product.save()
+    messages.success(request, "Product status updated.")
+    return redirect('admin_product_list')
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_product_delete(request, uuid):
+    product = get_object_or_404(Product, uuid=uuid)
+    if request.method == 'POST':
+        try:
+            product.delete()
+            messages.success(request, "Product deleted.")
+        except ProtectedError:
+            messages.error(request, "Product cannot be deleted because it has orders.")
+    return redirect('admin_product_list')
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_review_list(request):
+    reviews = Review.objects.select_related('product', 'user').all()
+    q = request.GET.get('q', '').strip()
+    rating_filter = request.GET.get('rating')
+    if q: reviews = reviews.filter(Q(product__name__icontains=q) | Q(user__fullname__icontains=q) | Q(comment__icontains=q))
+    if rating_filter:
+        if rating_filter == 'low': reviews = reviews.filter(rating__lte=2)
+        elif rating_filter.isdigit(): reviews = reviews.filter(rating=int(rating_filter))
+    reviews = apply_sorting(request, reviews, default_order='-created_at')
+    page_obj = paginate_queryset(request, reviews, page_size=15)
+    return render(request, 'admin_review_list.html', {'reviews': page_obj, 'q': q, 'rating_filter': rating_filter})
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_review_delete(request, pk):
+    review = get_object_or_404(Review, pk=pk)
+    if request.method == 'POST':
+        review.delete()
+        messages.success(request, "Review deleted.")
+    return redirect('admin_review_list')
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_favorite_list(request):
+    favorites = Favorite.objects.select_related('user', 'product').all()
+    q = request.GET.get('q', '').strip()
+    if q: favorites = favorites.filter(Q(product__name__icontains=q) | Q(user__fullname__icontains=q))
+    favorites = apply_sorting(request, favorites, default_order='-created_at')
+    page_obj = paginate_queryset(request, favorites, page_size=20)
+    return render(request, 'admin_favorite_list.html', {'favorites': page_obj, 'q': q})
+
+@login_required
+@user_passes_test(lambda u: u.role == User.Role.ADMIN, login_url='login')
+def admin_seller_delete(request, user_id):
+    seller = get_object_or_404(User, id=user_id, role=User.Role.SELLER)
+    if request.method == 'POST':
+        seller.delete()
+        messages.success(request, "Seller deleted.")
+    return redirect('admin_seller_management')
 
 
 def terms_of_use(request):
     return render(request, 'terms_of_use.html')
 
-
 def privacy_policy(request):
     return render(request, 'privacy_policy.html')
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from .models import Favorite, Product
+import json
+
+@login_required
+@require_POST
+def wishlist_bulk_remove(request):
+    try:
+        data = json.loads(request.body)
+        favorite_ids = data.get('favorite_ids', [])
+        if not favorite_ids:
+            return JsonResponse({'success': False, 'error': 'Hiç hili ID iberilmedi.'}, status=400)
+        
+        # Ulanyja degişli Favorite ýazgylaryny poz
+        deleted, _ = Favorite.objects.filter(
+            user=request.user,
+            product_id__in=favorite_ids
+        ).delete()
+        
+        return JsonResponse({'success': True, 'deleted_count': deleted})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

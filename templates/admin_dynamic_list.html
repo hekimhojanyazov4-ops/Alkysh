@@ -1,0 +1,51 @@
+{% extends 'base_admin.html' %}
+{% load custom_filters %}
+
+{% block title %}{{ model_meta.verbose_name_plural|capfirst }}{% endblock %}
+{% block header_title %}{{ model_meta.verbose_name_plural|capfirst }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto reveal">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ model_meta.verbose_name_plural|capfirst }}</h1>
+            <p class="text-gray-500 text-sm mt-1">Dinamiki dolandyryş: {{ model_meta.app_label }} / {{ model_meta.model_name }}</p>
+        </div>
+        
+        <form method="get" class="flex items-center gap-2">
+            <input type="text" name="q" value="{{ q|default:'' }}" placeholder="Gözle..." 
+                   class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-lux-600 focus:outline-none dark:text-white w-64">
+            <button type="submit" class="bg-slate-900 dark:bg-lux-600 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-sm">Gözle</button>
+        </form>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux overflow-hidden border border-gray-100 dark:border-gray-700">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="bg-gray-50 dark:bg-gray-900/50 text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-100 dark:border-gray-700">
+                        {% for field in fields %}
+                            <th class="px-6 py-4">{{ field.verbose_name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50 dark:divide-gray-700/50">
+                    {% for item in items %}
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors">
+                        {% for field in fields %}
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                {{ item|get_attr:field.name }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{{ fields|length }}" class="px-6 py-20 text-center text-gray-400 italic">Maglumat tapylmady.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

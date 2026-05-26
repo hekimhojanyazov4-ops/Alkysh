@@ -19,12 +19,31 @@ def validate_file_size(value):
     if value.size > limit:
         raise ValidationError('File too large. Size should not exceed 5 MiB.')
 
+import uuid
+from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.core.validators import FileExtensionValidator
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.urls import reverse
+from django.conf import settings
+
+# Предполагается, что ваш кастомный валидатор импортируется или написан выше
+# from .validators import validate_file_size 
+def validate_file_size(value):
+    pass # Замените на ваш реальный валидатор, если он находится в этом же файле
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, fullname, password=None, **extra_fields):
         if not email:
             raise ValueError("Email is required")
         email = self.normalize_email(email)
+        
+        # Если роль не передана, по умолчанию ставим CUSTOMER
+        extra_fields.setdefault('role', 'CUSTOMER')
+        
         user = self.model(email=email, fullname=fullname, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -33,6 +52,18 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, fullname, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно устанавливаем роль ADMIN для суперпользователя
+        extra_fields['role'] = 'ADMIN'
+        
+        # Суперпользователь должен быть сразу одобрен (is_approved=True)
+        extra_fields.setdefault('is_approved', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
         return self.create_user(email, fullname, password, **extra_fields)
 
 
@@ -50,8 +81,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_approved = models.BooleanField(default=False)
     verification_document = models.FileField(
         upload_to='seller_docs/',
-       
- blank=True,
+        blank=True,
         null=True,
         validators=[
             FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png']),
@@ -94,7 +124,6 @@ class User(AbstractBaseUser, PermissionsMixin):
                     'seller_name': self.fullname,
                     'seller_email': self.email,
                     'admin_url': admin_url,
-                    # Eger created_at ýok bolsa, uuid bilen çalyşýar
                     'timestamp': self.created_at if hasattr(self, 'created_at') else uuid.uuid4(),
                 }
 

@@ -1,0 +1,196 @@
+{% extends 'base_admin.html' %}
+{% load custom_filters %}
+{% block title %}Review Management{% endblock %}
+{% block header_title %}User Feedback{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Product Reviews</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Manage customer feedback and ratings.</p>
+        </div>
+    </div>
+
+    <div class="mb-8 reveal">
+        <form method="get" class="flex items-center gap-3">
+            <div class="relative">
+                <input type="text" name="q" value="{{ q|default:'' }}" placeholder="Search reviews..." 
+                       class="pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-lux-400 focus:outline-none dark:text-white w-80">
+                <div class="absolute left-3 top-2.5 text-gray-400">
+                    <i class="bi bi-search text-sm"></i>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 p-1">
+                <select name="rating" onchange="this.form.submit()" class="bg-transparent text-sm border-none focus:ring-0 dark:text-gray-200 px-3 cursor-pointer">
+                    <option value="">All Ratings</option>
+                    <option value="low" {% if rating_filter == 'low' %}selected{% endif %}>Low (1-2 Stars)</option>
+                    <option value="1" {% if rating_filter == '1' %}selected{% endif %}>1 Star</option>
+                    <option value="2" {% if rating_filter == '2' %}selected{% endif %}>2 Stars</option>
+                    <option value="3" {% if rating_filter == '3' %}selected{% endif %}>3 Stars</option>
+                    <option value="4" {% if rating_filter == '4' %}selected{% endif %}>4 Stars</option>
+                    <option value="5" {% if rating_filter == '5' %}selected{% endif %}>5 Stars</option>
+                </select>
+            </div>
+
+            <button type="submit" class="bg-lux-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-lux-700 transition-colors">Search</button>
+            {% if q or rating_filter %}
+                <a href="{% url 'admin_review_list' %}" class="text-xs text-gray-500 hover:text-lux-600 font-medium px-2">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <form method="post" action="{% url 'admin_review_bulk_action' %}" id="bulk-action-form">
+        {% csrf_token %}
+        <div id="bulk-toolbar" class="hidden flex items-center justify-between px-6 py-3 mb-4 border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl">
+            <div class="flex items-center gap-3">
+                <select name="action" class="text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-white px-3 py-2">
+                    <option value="">-- Bulk Action --</option>
+                    <option value="delete">Delete Selected</option>
+                </select>
+                <button type="submit" class="bg-lux-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-lux-700">Apply</button>
+            </div>
+            <span class="text-xs text-gray-500" id="selected-count">0 selected</span>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lux overflow-hidden border border-gray-100 dark:border-gray-700 reveal">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+                        <tr class="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+                            <th class="px-6 py-4 w-10"><input type="checkbox" id="select-all" class="rounded border-gray-300 text-lux-600"></th>
+                            <th class="px-6 py-4">Product</th>
+                            <th class="px-6 py-4">User</th>
+                            <th class="px-6 py-4">Rating</th>
+                            <th class="px-6 py-4">Comment</th>
+                            <th class="px-6 py-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        {% for review in reviews %}
+                        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                            <td class="px-6 py-4"><input type="checkbox" name="ids" value="{{ review.id }}" class="bulk-checkbox rounded border-gray-300 text-lux-600"></td>
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ review.product.name }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ review.user.fullname }}</td>
+                            <td class="px-6 py-4">
+                                 <div class="flex text-amber-400 text-xs">
+                                    {% for i in "12345" %}
+                                        <i class="bi bi-star{% if review.rating >= forloop.counter %}-fill{% endif %}"></i>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">{{ review.comment }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <form action="{% url 'admin_review_delete' review.id %}" method="post" class="inline" onsubmit="return confirm('Delete this review?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-500 hover:text-red-600 font-bold text-xs uppercase">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="px-6 py-20 text-center text-gray-500">No reviews found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+
+    {% if reviews.has_other_pages %}
+    <div class="mt-8 flex justify-center">
+        <nav class="flex items-center space-x-2">
+            {% if reviews.has_previous %}
+                <a href="?{% url_replace page=reviews.previous_page_number %}" class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-100">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            {% endif %}
+            <span class="px-4 py-2 bg-lux-600 text-white rounded-xl font-bold">{{ reviews.number }}</span>
+            {% if reviews.has_next %}
+                <a href="?{% url_replace page=reviews.next_page_number %}" class="p-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-100">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    /**
+     * Initializes bulk selection functionality.
+     * @param {Object} config
+     * @param {string} config.selectAllId - ID of the "select all" checkbox
+     * @param {string} config.checkboxClass - Class of individual item checkboxes
+     * @param {string} config.toolbarId - ID of the bulk action toolbar
+     * @param {string} config.countId - ID of the element showing selected count
+     * @param {string} config.formId - ID of the bulk action form (optional, for reset on submit)
+     */
+    function initBulkActions({ selectAllId, checkboxClass, toolbarId, countId, formId }) {
+        const selectAll = document.getElementById(selectAllId);
+        const checkboxes = document.querySelectorAll(`.${checkboxClass}`);
+        const toolbar = document.getElementById(toolbarId);
+        const countDisplay = document.getElementById(countId);
+        const form = formId ? document.getElementById(formId) : null;
+
+        function updateUI() {
+            const checked = document.querySelectorAll(`.${checkboxClass}:checked`);
+            const count = checked.length;
+            const allChecked = checkboxes.length > 0 && count === checkboxes.length;
+
+            // Update select-all checkbox
+            if (selectAll) {
+                selectAll.checked = allChecked;
+                selectAll.indeterminate = count > 0 && !allChecked;
+            }
+
+            // Show/hide toolbar
+            if (toolbar) {
+                toolbar.classList.toggle('hidden', count === 0);
+            }
+
+            // Update count text
+            if (countDisplay) {
+                countDisplay.textContent = `${count} selected`;
+            }
+        }
+
+        // "Select All" checkbox handler
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                const isChecked = this.checked;
+                checkboxes.forEach(cb => { cb.checked = isChecked; });
+                updateUI();
+            });
+        }
+
+        // Individual checkbox handlers
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateUI);
+        });
+
+        // Reset after form submit (to avoid stale state)
+        if (form) {
+            form.addEventListener('submit', function () {
+                setTimeout(() => {
+                    if (selectAll) selectAll.checked = false;
+                    checkboxes.forEach(cb => { cb.checked = false; });
+                    updateUI();
+                }, 10);
+            });
+        }
+
+        // Initial state
+        updateUI();
+    }
+
+    // Activate the bulk actions
+    initBulkActions({
+        selectAllId: 'select-all',
+        checkboxClass: 'bulk-checkbox',
+        toolbarId: 'bulk-toolbar',
+        countId: 'selected-count',
+        formId: 'bulk-action-form'
+    });
+</script>
+{% endblock %}

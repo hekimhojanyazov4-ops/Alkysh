@@ -44,48 +44,84 @@
         }
         .delay-100 { transition-delay: 0.1s; }
         .delay-200 { transition-delay: 0.2s; }
+
+        /* Mobile Sidebar Transitions */
+        #admin-sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        @media (max-width: 1023px) {
+            #admin-sidebar {
+                transform: translateX(-100%);
+            }
+            #admin-sidebar.open {
+                transform: translateX(0);
+            }
+        }
+
+        /* 3D tilt setup for sidebar links */
+        .sidebar-link {
+            transform-style: preserve-3d;
+            perspective: 800px;
+            transition: transform 0.1s ease-out, box-shadow 0.2s ease;
+        }
+        .sidebar-link:hover {
+            box-shadow: 0 10px 20px -10px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body class="h-full overflow-hidden flex">
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-10 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
     <!-- Sidebar -->
-    <aside class="w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col shadow-2xl z-20 transition-colors duration-300">
-        <div class="p-6 border-b border-slate-800">
-            <span class="text-2xl font-display font-bold tracking-tighter text-blue-400">LUX</span>
+    <aside id="admin-sidebar" class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col shadow-2xl z-20 transition-colors duration-300 lg:static lg:translate-x-0">
+        <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+            <span class="text-2xl font-display font-bold tracking-tighter text-blue-400"> <i class="bi bi-gem text-lux-500"></i>Alkyş</span>
             <span class="text-sm font-light text-slate-400 ml-1 uppercase">Admin</span>
+            <button class="lg:hidden text-gray-400 hover:text-white" aria-label="Close sidebar" onclick="toggleSidebar()">
+                <i class="bi bi-x-lg text-xl"></i>
+            </button>
         </div>
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <a href="{% url 'admin_dashboard' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_dashboard' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+            <a href="{% url 'admin_dashboard' %}" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_dashboard' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
                 <i class="bi bi-grid-1x2-fill"></i> <span class="font-medium">Dashboard</span>
             </a>
-            <a href="{% url 'admin_seller_management' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_seller_management' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+            <a href="{% url 'admin_seller_management' %}" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_seller_management' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
                 <i class="bi bi-shop-window"></i> <span class="font-medium">Sellers</span>
             </a>
-            <a href="{% url 'admin_category_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if 'category' in request.resolver_match.url_name %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
-                <i class="bi bi-tags"></i> <span class="font-medium">Categories</span>
-            </a>
-            <a href="{% url 'admin_brand_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if 'brand' in request.resolver_match.url_name %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
-                <i class="bi bi-gem"></i> <span class="font-medium">Brands</span>
-            </a>
-            <a href="{% url 'admin_product_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if 'product' in request.resolver_match.url_name %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
-                <i class="bi bi-box-seam"></i> <span class="font-medium">Products</span>
-            </a>
-            <a href="{% url 'order_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'order_list' or request.resolver_match.url_name == 'order_detail' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
-                <i class="bi bi-clipboard2-check"></i> <span class="font-medium">Orders</span>
-            </a>
-            <a href="{% url 'admin_customer_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_customer_list' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+            <a href="{% url 'admin_customer_list' %}" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_customer_list' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
                 <i class="bi bi-people-fill"></i> <span class="font-medium">Customers</span>
             </a>
-            <a href="{% url 'admin_payment_list' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_payment_list' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+            <a href="{% url 'admin_product_list' %}" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if 'product' in request.resolver_match.url_name %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-box-seam"></i> <span class="font-medium">Products</span>
+            </a>
+            <a href="{% url 'admin_category_list' %}" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if 'category' in request.resolver_match.url_name %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-tags"></i> <span class="font-medium">Categories</span>
+            </a>
+            <a href="{% url 'admin_brand_list' %}" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if 'brand' in request.resolver_match.url_name %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-gem"></i> <span class="font-medium">Brands</span>
+            </a>
+            <a href="{% url 'order_list' %}" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'order_list' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-clipboard-check"></i> <span class="font-medium">Orders</span>
+            </a>
+            <a href="{% url 'admin_payment_list' %}" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_payment_list' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
                 <i class="bi bi-wallet2"></i> <span class="font-medium">Payments</span>
             </a>
+            <a href="{% url 'admin_review_list' %}" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_review_list' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-chat-left-text"></i> <span class="font-medium">Reviews</span>
+            </a>
+            <a href="{% url 'admin_favorite_list' %}" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all {% if request.resolver_match.url_name == 'admin_favorite_list' %}bg-slate-800 text-blue-400 border-l-4 border-blue-400{% endif %}">
+                <i class="bi bi-heart"></i> <span class="font-medium">Wishlists</span>
+            </a>
+
             <div class="pt-4 border-t border-slate-800 mt-4">
-                <a href="{% url 'admin_log_viewer' %}" class="flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all text-slate-400 {% if request.resolver_match.url_name == 'admin_log_viewer' %}bg-slate-800 text-white{% endif %}">
+                <a href="{% url 'admin_log_viewer' %}" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-800 transition-all text-slate-400 {% if request.resolver_match.url_name == 'admin_log_viewer' %}bg-slate-800 text-white{% endif %}">
                     <i class="bi bi-terminal-fill"></i> <span class="text-sm">System Logs</span>
                 </a>
             </div>
         </nav>
         <div class="p-6 border-t border-slate-800">
-            <a href="{% url 'logout' %}" class="flex items-center space-x-3 p-3 text-red-400 hover:bg-red-900/20 rounded-lg">
+            <a href="{% url 'logout' %}" class="sidebar-link flex items-center space-x-3 p-3 text-red-400 hover:bg-red-900/20 rounded-lg">
                 <i class="bi bi-box-arrow-left"></i> <span>Logout</span>
             </a>
         </div>
@@ -95,10 +131,13 @@
     <main class="flex-1 flex flex-col overflow-hidden">
         <header class="h-16 bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex items-center justify-between px-8 transition-colors duration-300">
             <div class="flex items-center space-x-4">
+                <button class="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" onclick="toggleSidebar()" aria-label="Open sidebar">
+                    <i class="bi bi-list text-2xl"></i>
+                </button>
                 <h2 class="text-lg font-semibold text-gray-800 dark:text-white">{% block header_title %}Overview{% endblock %}</h2>
             </div>
             <div class="flex items-center space-x-4">
-                <button id="theme-toggle" class="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <button id="theme-toggle" class="p-2 rounded-lg text-gray-500 active:text-slate-900 dark:text-gray-400 dark:active:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     <i id="theme-toggle-dark-icon" class="bi bi-moon-stars hidden"></i>
                     <i id="theme-toggle-light-icon" class="bi bi-sun hidden"></i>
                 </button>
@@ -121,6 +160,14 @@
         </div>
     </main>
 
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('admin-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('hidden');
+        }
+    </script>
     <script>
         // Theme Toggle Logic
         const themeToggleBtn = document.getElementById('theme-toggle');
@@ -163,75 +210,86 @@
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
         // Global Bulk Selection Helper
-        window.initBulkActions = function(selectAllId, checkboxClass, actionBarId) {
+        window.initBulkActions = function(config) {
+            const { selectAllId, checkboxClass, toolbarId, countId, formId } = config;
             const selectAll = document.getElementById(selectAllId);
             const checkboxes = document.querySelectorAll('.' + checkboxClass);
-            const actionBar = document.getElementById(actionBarId);
-            const countDisplay = actionBar ? actionBar.querySelector('#selected-count') : null;
-            const summaryDisplay = actionBar ? actionBar.querySelector('#bulk-summary-content') : null;
+            const toolbar = document.getElementById(toolbarId);
+            const countDisplay = document.getElementById(countId);
 
-            if (!selectAll || !actionBar) return;
+            if (!selectAll || !checkboxes.length) return;
 
-            const fetchSummary = async (ids) => {
-                if (ids.length === 0 || !summaryDisplay) return;
-                
-                try {
-                    const response = await fetch(`/admin-panel/api/bulk-summary/?ids=${ids.join(',')}`);
-                    const data = await response.json();
-                    
-                    let html = '<div class="flex gap-6 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">';
-                    
-                    if (data.categories.length > 0) {
-                        html += '<div><span class="text-[10px] font-bold text-gray-400 uppercase">Categories:</span><div class="flex flex-wrap gap-2 mt-1">';
-                        data.categories.forEach(c => {
-                            html += `<span class="px-2 py-0.5 bg-lux-50 dark:bg-lux-900/30 text-lux-600 rounded text-[10px] font-bold">${c.name} (${c.count})</span>`;
-                        });
-                        html += '</div></div>';
-                    }
-
-                    if (data.brands.length > 0) {
-                        html += '<div><span class="text-[10px] font-bold text-gray-400 uppercase">Brands:</span><div class="flex flex-wrap gap-2 mt-1">';
-                        data.brands.forEach(b => {
-                            html += `<span class="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded text-[10px] font-bold">${b.name} (${b.count})</span>`;
-                        });
-                        html += '</div></div>';
-                    }
-                    
-                    html += '</div>';
-                    summaryDisplay.innerHTML = html;
-                } catch (err) {
-                    console.error('Error fetching bulk summary:', err);
-                }
-            };
-
-            const updateBar = () => {
-                const checkedBoxes = Array.from(document.querySelectorAll('.' + checkboxClass + ':checked'));
-                const ids = checkedBoxes.map(cb => cb.value);
+            const updateState = () => {
+                const checkedBoxes = document.querySelectorAll('.' + checkboxClass + ':checked');
                 const checkedCount = checkedBoxes.length;
-                
-                // Toggle visibility of the bulk action bar
-                actionBar.classList.toggle('hidden', checkedCount === 0);
-                
-                // Update the selection counter text if available
-                if (countDisplay) countDisplay.textContent = checkedCount;
 
-                // Sync the "Select All" checkbox state
-                selectAll.checked = checkedCount === checkboxes.length && checkboxes.length > 0;
-                selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
-
-                // Fetch dynamic summary from API
-                if (checkedCount > 0) {
-                    fetchSummary(ids);
+                if (countDisplay) {
+                    countDisplay.textContent = checkedCount + ' selected';
                 }
+                
+                if (toolbar) {
+                    toolbar.classList.toggle('hidden', checkedCount === 0);
+                }
+
+                const allChecked = checkboxes.length === checkedCount;
+                selectAll.checked = allChecked;
+                selectAll.indeterminate = checkedCount > 0 && !allChecked;
             };
 
-            selectAll.addEventListener('change', (e) => {
-                checkboxes.forEach(cb => cb.checked = e.target.checked);
-                updateBar();
+            selectAll.addEventListener('change', function () {
+                checkboxes.forEach(cb => cb.checked = this.checked);
+                updateState();
             });
 
-            checkboxes.forEach(cb => cb.addEventListener('change', updateBar));
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateState);
+            });
+
+            if (formId) {
+                const form = document.getElementById(formId);
+                form?.addEventListener('submit', function(e) {
+                    const actionSelect = this.querySelector('select[name="action"]');
+                    if (actionSelect && !actionSelect.value) {
+                        e.preventDefault();
+                        actionSelect.focus();
+                        return;
+                    }
+                    if (actionSelect && actionSelect.value === 'delete') {
+                        if (!confirm('Are you sure you want to delete the selected items? This action cannot be undone.')) {
+                            e.preventDefault();
+                        }
+                    }
+                });
+            }
+
+            updateState();
         };
+
+        // ========== Soft 3D Tilt Animation for Sidebar Links ==========
+        (function() {
+            const links = document.querySelectorAll('.sidebar-link');
+            
+            links.forEach(link => {
+                link.addEventListener('mousemove', (e) => {
+                    const rect = link.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    
+                    // Calculate rotation (max 6 degrees for a soft effect)
+                    const rotateX = ((y - centerY) / centerY) * -4; // Inverted for natural feel
+                    const rotateY = ((x - centerX) / centerX) * 4;
+                    
+                    link.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+                });
+                
+                link.addEventListener('mouseleave', () => {
+                    link.style.transform = 'perspective(800px) rotateX(0) rotateY(0) scale(1)';
+                });
+            });
+        })();
     </script>
 </body>
 </html>

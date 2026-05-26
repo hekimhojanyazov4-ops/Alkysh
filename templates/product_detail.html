@@ -19,7 +19,10 @@
             </div>
             <!-- Esasy surat (sagda) -->
             <div class="flex-1 order-1 md:order-2 relative">
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lux overflow-hidden relative">
+                    <div id="zoomLens" class="absolute pointer-events-none opacity-0 z-50 text-white drop-shadow-md transition-opacity duration-200">
+                        <i class="bi bi-search text-2xl"></i>
+                    </div>
                     <img id="mainImage" src="{{ product.images.first.image.url|default:'https://via.placeholder.com/600' }}"
                          class="w-full aspect-square md:h-[500px] object-cover cursor-zoom-in transition-transform duration-300"
                          data-zoom="{{ product.images.first.image.url }}">
@@ -30,14 +33,14 @@
         <!-- Maglumat bölümi (üýtgemedi) -->
         <div>
             <p class="text-lux-600 font-medium">{{ product.category.name }}</p>
-            <h1 class="font-display text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ product.name }}</h1>
+            <h1 class="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mt-2">{{ product.name }}</h1>
             <div class="flex items-baseline gap-3 mt-6">
                 {% if product.discount_price is not None %}
                     <span class="text-4xl font-bold text-lux-600">${{ product.discount_price }}</span>
-                    <span class="text-lg text-gray-400 line-through">${{ product.price }}</span>
+                    <span class="text-lg text-slate-400 line-through">${{ product.price }}</span>
                     <span class="ml-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-3 py-1 rounded-full text-sm font-medium">Save ${{ savings }}</span>
                 {% else %}
-                    <span class="text-4xl font-bold text-gray-800 dark:text-gray-100">${{ product.price }}</span>
+                    <span class="text-4xl font-bold text-slate-800 dark:text-slate-100">${{ product.price }}</span>
                 {% endif %}
             </div>
 
@@ -50,30 +53,30 @@
                     <i class="bi bi-star{% if avg_rating >= 4 %}-fill{% endif %}"></i>
                     <i class="bi bi-star{% if avg_rating >= 5 %}-fill{% endif %}"></i>
                 </div>
-                <span class="text-sm text-gray-500">({{ reviews.count }} reviews)</span>
-                <div class="ml-auto flex items-center gap-1.5 text-gray-400 text-sm">
+                <span class="text-sm text-slate-500">({{ reviews.count }} reviews)</span>
+                <div class="ml-auto flex items-center gap-1.5 text-slate-400 text-sm">
                     <i class="bi bi-eye"></i>
                     <span>{{ product.view_count }} views</span>
                 </div>
             </div>
 
-            <p class="text-gray-600 dark:text-gray-400 mt-6 leading-relaxed">{{ product.description }}</p>
-            <div class="border-t border-gray-200 dark:border-gray-700 mt-8 pt-6">
+            <p class="text-slate-600 dark:text-slate-400 mt-6 leading-relaxed">{{ product.description }}</p>
+            <div class="border-t border-slate-200 dark:border-slate-700 mt-8 pt-6">
                 {% if product.available %}
                     <div class="flex flex-wrap items-center gap-4">
-                        <div class="flex items-center border border-gray-300 dark:border-gray-600 rounded-full shrink-0">
-                            <button class="px-3 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-l-full" onclick="changeQty(-1)">−</button>
+                        <div class="flex items-center border border-slate-300 dark:border-slate-600 rounded-full shrink-0">
+                            <button class="px-3 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-l-full" onclick="changeQty(-1)">−</button>
                             <input id="qtyInput" type="text" value="1" class="w-12 text-center font-semibold focus:outline-none dark:bg-transparent dark:text-white" readonly>
-                            <button class="px-3 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-r-full" onclick="changeQty(1)">+</button>
+                            <button class="px-3 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-r-full" onclick="changeQty(1)">+</button>
                         </div>
-                        <button id="addToCartBtn" data-product-id="{{ product.id }}" class="flex-1 min-w-[160px] bg-lux-600 hover:bg-lux-700 text-white py-3 px-8 rounded-full font-medium transition-all shadow-lg hover:shadow-xl flex items-center justify-center">
+                        <button id="addToCartBtn" data-product-id="{{ product.id }}" class="flex-1 min-w-[160px] bg-lux-600 hover:bg-lux-700 text-white active:text-slate-900 dark:active:text-white py-3 px-8 rounded-full font-medium transition-all shadow-lg hover:shadow-xl flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-2 inline shrink-0">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                             </svg>
                             Add to Cart
                         </button>
                         <button id="favoriteBtn" data-product-id="{{ product.id }}" 
-                                class="p-3 rounded-full border {% if is_favorite %}bg-red-50 border-red-200 text-red-500{% else %}border-gray-200 text-gray-400{% endif %} hover:scale-110 transition-all shadow-md">
+                                class="p-3 rounded-full border {% if is_favorite %}bg-red-50 border-red-200 text-red-500{% else %}border-slate-200 text-slate-400{% endif %} active:text-slate-900 dark:active:text-white hover:scale-110 transition-all shadow-md">
                             <i class="bi {% if is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %} text-2xl"></i>
                         </button>
                     </div>
@@ -81,16 +84,16 @@
                     <div class="text-red-500 font-semibold">Out of stock</div>
                 {% endif %}
             </div>
-            <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">Sold by <span class="font-medium text-gray-700 dark:text-gray-300">{{ product.seller.fullname }}</span></div>
+            <div class="mt-4 text-sm text-slate-500 dark:text-slate-400">Sold by <span class="font-medium text-slate-700 dark:text-slate-300">{{ product.seller.fullname }}</span></div>
         </div>
     </div>
 
     <!-- Review Section -->
     <div class="mt-20 reveal">
-        <div class="border-b border-gray-100 dark:border-gray-800 pb-8 mb-12 flex flex-wrap items-end justify-between gap-6">
+        <div class="border-b border-slate-100 dark:border-slate-800 pb-8 mb-12 flex flex-wrap items-end justify-between gap-6">
             <div>
-                <h2 class="font-display text-3xl font-bold text-gray-900 dark:text-white">Customer Reviews</h2>
-                <p class="text-gray-500 mt-1">What our community thinks about this piece.</p>
+                <h2 class="font-display text-3xl font-bold text-slate-900 dark:text-white">Customer Reviews</h2>
+                <p class="text-slate-500 mt-1">What our community thinks about this piece.</p>
             </div>
         </div>
 
@@ -105,8 +108,8 @@
                                 {{ review.user.fullname|first|upper }}
                             </div>
                             <div>
-                                <p class="font-bold text-gray-900 dark:text-white">{{ review.user.fullname }}</p>
-                                <p class="text-xs text-gray-400">{{ review.created_at|date:"F d, Y" }}</p>
+                                <p class="font-bold text-slate-900 dark:text-white">{{ review.user.fullname }}</p>
+                                <p class="text-xs text-slate-400">{{ review.created_at|date:"F d, Y" }}</p>
                             </div>
                         </div>
                         <div class="flex text-amber-400 text-xs">
@@ -115,22 +118,22 @@
                             {% endfor %}
                         </div>
                     </div>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{{ review.comment }}</p>
+                    <p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">{{ review.comment }}</p>
                 </div>
                 {% empty %}
-                <p class="text-gray-400 italic">No reviews yet. Be the first to review this product!</p>
+                <p class="text-slate-400 italic">No reviews yet. Be the first to review this product!</p>
                 {% endfor %}
             </div>
 
             <!-- Right: Add Review Form -->
             {% if user.is_authenticated and user.role == 'CUSTOMER' %}
             <div class="lg:col-span-1">
-                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-3xl p-8 sticky top-24">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Write a Review</h3>
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-3xl p-8 sticky top-24">
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-6">Write a Review</h3>
                     <form action="{% url 'add_review' product.id %}" method="POST" class="space-y-4">
                         {% csrf_token %}
                         {{ review_form.as_p }}
-                        <button type="submit" class="w-full bg-lux-600 text-white py-3 rounded-xl font-medium hover:bg-lux-700 transition-all">Submit Review</button>
+                        <button type="submit" class="w-full bg-lux-600 text-white active:text-slate-900 dark:active:text-white py-3 rounded-xl font-medium hover:bg-lux-700 transition-all">Submit Review</button>
                     </form>
                 </div>
             </div>
@@ -141,30 +144,30 @@
     <!-- Degişli harytlar (Related Products) -->
     {% if related_products %}
     <section class="mt-16 reveal">
-        <h2 class="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-white mb-6">
+        <h2 class="text-2xl md:text-3xl font-display font-bold text-slate-900 dark:text-white mb-6">
             Related Products
         </h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
             {% for rp in related_products %}
-            <a href="{% url 'product_detail' rp.uuid %}" class="group block bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden hover:shadow-xl transition-all">
+            <a href="{% url 'product_detail' rp.uuid %}" class="group block bg-white dark:bg-slate-800 rounded-2xl shadow-lux overflow-hidden hover:shadow-xl transition-all">
                 <div class="aspect-square overflow-hidden">
                     <img src="{{ rp.images.first.image.url|default:'https://via.placeholder.com/400' }}" 
                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                          alt="{{ rp.name }}">
                 </div>
                 <div class="p-4">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ rp.brand.name|default:'' }}</p>
-                    <h3 class="font-semibold text-gray-800 dark:text-white truncate">{{ rp.name }}</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ rp.brand.name|default:'' }}</p>
+                    <h3 class="font-semibold text-slate-800 dark:text-white truncate">{{ rp.name }}</h3>
                     <div class="flex items-center gap-1 mt-1 text-xs text-amber-400">
                         <i class="bi bi-star-fill"></i>
-                        <span class="text-gray-500">({{ rp.review_count|default:0 }})</span>
+                        <span class="text-slate-500">({{ rp.review_count|default:0 }})</span>
                     </div>
                     <div class="mt-2 flex items-baseline gap-2">
                         {% if rp.discount_price %}
                             <span class="text-lg font-bold text-lux-600">${{ rp.discount_price }}</span>
-                            <span class="text-xs text-gray-400 line-through">${{ rp.price }}</span>
+                            <span class="text-xs text-slate-400 line-through">${{ rp.price }}</span>
                         {% else %}
-                            <span class="text-lg font-bold text-gray-800 dark:text-gray-100">${{ rp.price }}</span>
+                            <span class="text-lg font-bold text-slate-800 dark:text-slate-100">${{ rp.price }}</span>
                         {% endif %}
                     </div>
                 </div>
@@ -177,30 +180,30 @@
     <!-- Soňky görlenler (Recently Viewed) -->
     {% if recently_viewed %}
     <section class="mt-12 reveal">
-        <h2 class="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-white mb-6">
+        <h2 class="text-2xl md:text-3xl font-display font-bold text-slate-900 dark:text-white mb-6">
             Recently Viewed
         </h2>
         <div class="grid grid-cols-2 md:grid-cols-5 gap-6">
             {% for rv in recently_viewed %}
-            <a href="{% url 'product_detail' rv.uuid %}" class="group block bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden hover:shadow-xl transition-all">
+            <a href="{% url 'product_detail' rv.uuid %}" class="group block bg-white dark:bg-slate-800 rounded-2xl shadow-lux overflow-hidden hover:shadow-xl transition-all">
                 <div class="aspect-square overflow-hidden">
                     <img src="{{ rv.images.first.image.url|default:'https://via.placeholder.com/400' }}" 
                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                          alt="{{ rv.name }}">
                 </div>
                 <div class="p-4">
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ rv.brand.name|default:'' }}</p>
-                    <h3 class="font-semibold text-gray-800 dark:text-white truncate">{{ rv.name }}</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ rv.brand.name|default:'' }}</p>
+                    <h3 class="font-semibold text-slate-800 dark:text-white truncate">{{ rv.name }}</h3>
                     <div class="flex items-center gap-1 mt-1 text-xs text-amber-400">
                         <i class="bi bi-star-fill"></i>
-                        <span class="text-gray-500">({{ rv.review_count|default:0 }})</span>
+                        <span class="text-slate-500">({{ rv.review_count|default:0 }})</span>
                     </div>
                     <div class="mt-2 flex items-baseline gap-2">
                         {% if rv.discount_price %}
                             <span class="text-lg font-bold text-lux-600">${{ rv.discount_price }}</span>
-                            <span class="text-xs text-gray-400 line-through">${{ rv.price }}</span>
+                            <span class="text-xs text-slate-400 line-through">${{ rv.price }}</span>
                         {% else %}
-                            <span class="text-lg font-bold text-gray-800 dark:text-gray-100">${{ rv.price }}</span>
+                            <span class="text-lg font-bold text-slate-800 dark:text-slate-100">${{ rv.price }}</span>
                         {% endif %}
                     </div>
                 </div>
@@ -336,15 +339,35 @@
 
     // Surat ulaltma (zoom) effekti
     const mainImg = document.getElementById('mainImage');
-    mainImg?.addEventListener('mousemove', (e) => {
+    const zoomLens = document.getElementById('zoomLens');
+    
+    const zoomHandler = (e) => {
+        const pointer = e.touches ? e.touches[0] : e;
         const { left, top, width, height } = mainImg.getBoundingClientRect();
-        const x = ((e.clientX - left) / width) * 100;
-        const y = ((e.clientY - top) / height) * 100;
+        const x = ((pointer.clientX - left) / width) * 100;
+        const y = ((pointer.clientY - top) / height) * 100;
         mainImg.style.transformOrigin = `${x}% ${y}%`;
         mainImg.style.transform = 'scale(1.8)';
-    });
-    mainImg?.addEventListener('mouseleave', () => {
+
+        if (zoomLens) {
+            zoomLens.style.opacity = '1';
+            // Center the 24px icon on the cursor/touch point
+            zoomLens.style.left = (pointer.clientX - left - 12) + 'px';
+            zoomLens.style.top = (pointer.clientY - top - 12) + 'px';
+        }
+    };
+
+    const resetZoom = () => {
         mainImg.style.transform = 'scale(1)';
-    });
+        if (zoomLens) zoomLens.style.opacity = '0';
+    };
+
+    mainImg?.addEventListener('mousemove', zoomHandler);
+    mainImg?.addEventListener('mouseleave', resetZoom);
+    mainImg?.addEventListener('touchmove', (e) => {
+        if (e.cancelable) e.preventDefault();
+        zoomHandler(e);
+    }, { passive: false });
+    mainImg?.addEventListener('touchend', resetZoom);
 </script>
 {% endblock %}
