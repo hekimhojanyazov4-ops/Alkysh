@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{% block title %}{% endblock %} | Alkyş</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -20,7 +20,7 @@
                         'gold': { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' }
                     },
                     fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        sans: ['Montserrat', 'system-ui', 'sans-serif'],
                         display: ['Playfair Display', 'serif'],
                     },
                     boxShadow: {
@@ -37,7 +37,7 @@
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
     <!-- Dark mode init (prevents flash) -->
     <script>
@@ -51,6 +51,11 @@
 
     <style>
         html { scroll-behavior: smooth; }
+
+        /* Touch optimisation */
+        a, button, .btn-lux-premium, .btn-gold-premium, .nav-link {
+            touch-action: manipulation;
+        }
 
         .glass {
             background: rgba(255,255,255,0.75);
@@ -134,6 +139,51 @@
 
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Mobile menu backdrop & scroll lock */
+        .menu-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 40;
+            display: none;
+        }
+        .menu-backdrop.show { display: block; }
+        body.menu-open { overflow: hidden; }
+
+        @keyframes brand-glow-multi {
+            0%, 100% { 
+                color: #a78bfa;
+                /* text-shadow: 2px 2px 0px #a78bfa, 4px 4px 0px rgba(167,139,250,0.2);  */
+            } /* Violet */
+            14%      { 
+                color: #fbbf24;
+                /* text-shadow: 2px 2px 0px #fbbf24, 4px 4px 0px rgba(251,191,36,0.2);  */
+            } /* Gold */
+            28%      { 
+                color: #10b981;
+                /* text-shadow: 2px 2px 0px #10b981, 4px 4px 0px rgba(16,185,129,0.2);  */
+            } /* Emerald */
+            42%      { 
+                color: #0ea5e9;
+                /* text-shadow: 2px 2px 0px #0ea5e9, 4px 4px 0px rgba(14,165,233,0.2);  */
+            } /* Sky */
+            57%      { 
+                color: #f43f5e;
+                /* text-shadow: 2px 2px 0px #f43f5e, 4px 4px 0px rgba(244,63,94,0.2);  */
+            } /* Rose */
+            71%      { 
+                color: #f59e0b;
+                /* text-shadow: 2px 2px 0px #f59e0b, 4px 4px 0px rgba(245,158,11,0.2);  */
+            } /* Amber */
+            85%      { 
+                color: #6366f1;
+                /* text-shadow: 2px 2px 0px #6366f1, 4px 4px 0px rgba(99,102,241,0.2);  */
+            } /* Indigo */
+        }
+        .brand-pulse-auto {
+            animation: brand-glow-multi 14s infinite;
+        }
     </style>
 
     {% block extra_head %}{% endblock %}
@@ -141,20 +191,23 @@
 
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 font-sans antialiased">
 
+<!-- Backdrop for mobile menu (behind menu, above content) -->
+<div id="menu-backdrop" class="menu-backdrop lg:hidden"></div>
+
 <!-- ═══════════════════════════════ NAVBAR ═══════════════════════════════ -->
 <nav id="mainNavbar" class="fixed w-full z-50 transition-all duration-300 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-white/10 shadow-lg">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16">
+        <div class="flex items-center justify-between h-14 sm:h-16">
 
-            <!-- Logo -->
+            <!-- Logo (responsive sizing) -->
             <a href="{% url 'home' %}" 
-               class="font-display text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3 group shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 rounded-lg"
+               class="font-display text-2xl sm:text-3xl font-bold tracking-[0.1em] flex items-center gap-2 sm:gap-3 group shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 rounded-lg brand-pulse-auto px-2 -mx-2 transition-all"
                aria-label="Alkyş – Home">
-                      <i class="bi bi-gem text-lux-500"></i>
-                <span class="hidden sm:inline">Alkyş</span>
+                <i class="bi bi-gem text-lg sm:text-xl"></i>
+                <span class="hidden sm:inline italic">Alkyş</span>
             </a>
 
-            <!-- Desktop search bar -->
+            <!-- Desktop search bar (unchanged) -->
             <div class="hidden lg:flex flex-1 max-w-md mx-6">
                 <form action="{% url 'home' %}" method="GET" class="relative w-full">
                     <input type="search" name="q" placeholder="Search products..."
@@ -164,7 +217,7 @@
                 </form>
             </div>
 
-            <!-- Desktop navigation links -->
+            <!-- Desktop navigation links (unchanged) -->
             <div class="hidden lg:flex items-center space-x-1">
                 <a href="{% url 'home' %}" 
                    class="nav-link {% if request.path == '/' %}active{% endif %} text-slate-600 hover:text-slate-900 active:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:active:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1.5"
@@ -176,7 +229,7 @@
                     <a href="{% url 'cart' %}" 
                        class="nav-link relative {% if '/cart' in request.path %}active{% endif %} text-slate-600 hover:text-slate-900 active:text-slate-900 dark:text-slate-300 dark:hover:text-white dark:active:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1.5">
                         <i class="bi bi-cart3"></i> Cart
-                        <span id="cart-count" class="absolute -top-1 -right-1 bg-gold-500 text-gray-950 rounded-full h-4 w-4 flex items-center justify-center text-[9px] font-black shadow-lg border border-white dark:border-slate-950 transition-all {% if not user.cart.items.count %}hidden{% endif %}">
+                        <span id="cart-count" class="absolute -top-1 -right-1 bg-gold-500 text-gray-950 rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-black shadow-lg border border-white dark:border-slate-950 px-0.5 {% if not user.cart.items.count %}hidden{% endif %}">
                             {{ user.cart.items.count|default:'' }}
                         </span>
                     </a>
@@ -215,7 +268,7 @@
                 {% endif %}
             </div>
 
-            <!-- Desktop right side: theme toggle & user -->
+            <!-- Desktop right side: theme toggle & user (unchanged) -->
             <div class="hidden lg:flex items-center gap-3">
                 <button id="theme-toggle" type="button"
                         class="p-2 rounded-full text-slate-500 hover:text-slate-900 active:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:active:text-white dark:hover:bg-white/10 transition-colors"
@@ -270,30 +323,30 @@
                 {% endif %}
             </div>
 
-            <!-- Mobile section -->
-            <div class="flex lg:hidden items-center gap-2">
+            <!-- Mobile section: visible only on <lg -->
+            <div class="flex lg:hidden items-center gap-1">
                 <!-- Mobile search toggle -->
-                <button id="mobile-search-btn" class="p-2 text-slate-500 hover:text-slate-900 active:text-slate-900 dark:text-slate-400 dark:hover:text-white dark:active:text-white">
-                    <i class="bi bi-search text-lg"></i>
+                <button id="mobile-search-btn" class="p-2 text-slate-500 hover:text-slate-900 active:text-slate-900 dark:text-slate-400 dark:hover:text-white dark:active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center">
+                    <i class="bi bi-search text-xl"></i>
                 </button>
 
                 {% if user.is_authenticated and user.role == 'CUSTOMER' %}
-                    <a href="{% url 'cart' %}" class="relative p-2 text-slate-500 hover:text-slate-900 active:text-slate-900 dark:text-slate-400 dark:hover:text-white dark:active:text-white">
+                    <a href="{% url 'cart' %}" class="relative p-2 text-slate-500 hover:text-slate-900 active:text-slate-900 dark:text-slate-400 dark:hover:text-white dark:active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center">
                         <i class="bi bi-cart3 text-xl"></i>
-                        <span id="cart-count-mobile" class="absolute -top-0.5 -right-0.5 bg-gold-500 text-gray-950 rounded-full h-4 w-4 flex items-center justify-center text-[9px] font-black shadow-lg border border-white dark:border-slate-950 transition-all {% if not user.cart.items.count %}hidden{% endif %}">
+                        <span id="cart-count-mobile" class="absolute top-0.5 right-0.5 bg-gold-500 text-gray-950 rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-black shadow-lg border border-white dark:border-slate-950 px-0.5 {% if not user.cart.items.count %}hidden{% endif %}">
                             {{ user.cart.items.count|default:'' }}
                         </span>
                     </a>
                 {% endif %}
 
                 <button id="theme-toggle-mobile" type="button"
-                        class="p-2 text-slate-500 hover:text-slate-900 active:text-slate-900 dark:text-slate-400 dark:hover:text-white dark:active:text-white transition-colors" aria-label="Toggle theme">
+                        class="p-2 text-slate-500 hover:text-slate-900 active:text-slate-900 dark:text-slate-400 dark:hover:text-white dark:active:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Toggle theme">
                     <i id="theme-toggle-dark-icon-mobile"  class="bi bi-moon-stars text-lg hidden"></i>
                     <i id="theme-toggle-light-icon-mobile" class="bi bi-sun       text-lg hidden"></i>
                 </button>
 
                 <button id="mobile-menu-btn" type="button"
-                        class="p-2 rounded-md text-slate-500 hover:text-slate-900 active:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:active:text-white dark:hover:bg-white/10 transition-colors"
+                        class="p-2 rounded-md text-slate-500 hover:text-slate-900 active:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:active:text-white dark:hover:bg-white/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                         aria-label="Open menu" aria-expanded="false">
                     <i id="hamburger-icon" class="bi bi-list text-2xl"></i>
                     <i id="close-icon"     class="bi bi-x-lg text-2xl hidden"></i>
@@ -301,10 +354,11 @@
             </div>
         </div>
 
-        <!-- Mobile search form (expandable) -->
+        <!-- Mobile search form (expandable, auto-focus) -->
         <div id="mobile-search-form" class="hidden pb-3 lg:hidden">
             <form action="{% url 'home' %}" method="GET" class="relative">
                 <input type="search" name="q" placeholder="Search products..."
+                       id="mobile-search-input"
                        class="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-full text-slate-900 placeholder-slate-500 dark:bg-white/10 dark:border-white/20 dark:text-white dark:placeholder-slate-300 
                               focus:outline-none focus:border-lux-400 text-sm">
                 <i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 text-sm"></i>
@@ -312,53 +366,52 @@
         </div>
     </div>
 
-    <!-- Mobile Menu -->
-    <div id="mobile-menu" class="lg:hidden overflow-hidden transition-all duration-300 max-h-0 opacity-0">
+    <!-- Mobile Menu (with backdrop & scroll lock) -->
+    <div id="mobile-menu" class="lg:hidden overflow-hidden transition-all duration-300 max-h-0 opacity-0 relative z-50">
         <div class="px-4 py-3 space-y-1 bg-white/95 dark:bg-slate-900/95 border-t border-slate-200 dark:border-white/10">
-            <a href="{% url 'home' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors">
+            <a href="{% url 'home' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors min-h-[44px]">
                 <i class="bi bi-house-door text-lg text-lux-400"></i> Home
             </a>
 
             {% if user.is_authenticated and user.role == 'CUSTOMER' %}
-                <a href="{% url 'cart' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors">
+                <a href="{% url 'cart' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors min-h-[44px]">
                     <i class="bi bi-cart3 text-lg text-lux-400"></i> Cart
-                    <span id="cart-count-drawer" class="ml-auto bg-gold-500 text-gray-950 rounded-full h-5 w-5 flex items-center justify-center text-[10px] font-black {% if not user.cart.items.count %}hidden{% endif %}">
+                    <span id="cart-count-drawer" class="ml-auto bg-gold-500 text-gray-950 rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-black px-0.5 {% if not user.cart.items.count %}hidden{% endif %}">
                         {{ user.cart.items.count|default:'' }}
                     </span>
                 </a>
-                <a href="{% url 'order_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors">
+                <a href="{% url 'order_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors min-h-[44px]">
                     <i class="bi bi-clipboard2-check text-lg text-lux-400"></i> Orders
                 </a>
-                <a href="{% url 'favorites_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors">
+                <a href="{% url 'favorites_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors min-h-[44px]">
                     <i class="bi bi-heart text-lg text-lux-400"></i> Favourites
                 </a>
 
             {% elif user.is_authenticated and user.role == 'SELLER' %}
-                <a href="{% url 'seller_dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors">
+                <a href="{% url 'seller_dashboard' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors min-h-[44px]">
                     <i class="bi bi-bar-chart-line text-lg text-lux-400"></i> Dashboard
                 </a>
-                <a href="{% url 'seller_product_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors">
+                <a href="{% url 'seller_product_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors min-h-[44px]">
                     <i class="bi bi-grid text-lg text-lux-400"></i> Products
                 </a>
-                <a href="{% url 'order_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors">
+                <a href="{% url 'order_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors min-h-[44px]">
                     <i class="bi bi-clipboard2-check text-lg text-lux-400"></i> Orders
                 </a>
 
             {% elif user.is_authenticated and user.role == 'ADMIN' %}
-                <!-- ★ Admin Panel (mobil) -->
-                <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gold-400 hover:bg-slate-100 active:text-gold-500 dark:hover:bg-white/10 hover:text-gold-300 text-sm font-medium transition-colors">
+                <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-gold-400 hover:bg-slate-100 active:text-gold-500 dark:hover:bg-white/10 hover:text-gold-300 text-sm font-medium transition-colors min-h-[44px]">
                     <i class="bi bi-speedometer2 text-lg"></i> Admin Panel
                 </a>
-                <a href="{% url 'admin_customer_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors">
+                <a href="{% url 'admin_customer_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors min-h-[44px]">
                     <i class="bi bi-people text-lg text-lux-400"></i> Customers
                 </a>
-                <a href="{% url 'admin_payment_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors">
+                <a href="{% url 'admin_payment_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors min-h-[44px]">
                     <i class="bi bi-cash-stack text-lg text-lux-400"></i> Payments
                 </a>
-                <a href="/admin/" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors">
+                <a href="/admin/" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors min-h-[44px]">
                     <i class="bi bi-gear text-lg text-lux-400"></i> Django Admin
                 </a>
-                <a href="{% url 'order_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors">
+                <a href="{% url 'order_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors min-h-[44px]">
                     <i class="bi bi-clipboard2-check text-lg text-lux-400"></i> Orders
                 </a>
             {% endif %}
@@ -375,10 +428,10 @@
                         <i class="bi bi-box-arrow-right text-lg"></i> Logout
                     </a>
                 {% else %}
-                    <a href="{% url 'login' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors">
+                    <a href="{% url 'login' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:text-slate-900 dark:text-slate-200 dark:hover:bg-white/10 dark:hover:text-white dark:active:text-white text-sm font-medium transition-colors min-h-[44px]">
                         <i class="bi bi-box-arrow-in-right text-lg text-lux-400"></i> Login
                     </a>
-                    <a href="{% url 'register' %}" class="btn-lux-premium flex items-center justify-center gap-2 mt-2 px-3 py-3 rounded-xl text-white text-sm font-semibold">
+                    <a href="{% url 'register' %}" class="btn-lux-premium flex items-center justify-center gap-2 mt-2 px-3 py-3 rounded-xl text-white text-sm font-semibold min-h-[44px]">
                         <i class="bi bi-person-plus text-lg"></i> Register
                     </a>
                 {% endif %}
@@ -387,11 +440,45 @@
     </div>
 </nav>
 
-<!-- Toast Container -->
-<div id="toast-container" class="fixed top-20 right-4 z-50 space-y-2 w-80 max-w-[calc(100vw-2rem)]"></div>
+<!-- Bottom navigation bar (mobile only) -->
+<nav class="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white/95 dark:bg-slate-950/90 backdrop-blur-md border-t border-slate-200 dark:border-white/10 safe-area-inset-bottom">
+    <div class="flex items-center justify-around h-14 px-2">
+        <a href="{% url 'home' %}" class="flex flex-col items-center justify-center gap-0.5 text-slate-500 dark:text-slate-400 hover:text-lux-600 dark:hover:text-lux-400 min-w-[44px] min-h-[44px]">
+            <i class="bi bi-house-door text-xl"></i>
+            <span class="text-[10px] font-medium">Home</span>
+        </a>
+        <button id="bottom-search-btn" class="flex flex-col items-center justify-center gap-0.5 text-slate-500 dark:text-slate-400 hover:text-lux-600 dark:hover:text-lux-400 min-w-[44px] min-h-[44px]">
+            <i class="bi bi-search text-xl"></i>
+            <span class="text-[10px] font-medium">Search</span>
+        </button>
+        {% if user.is_authenticated and user.role == 'CUSTOMER' %}
+        <a href="{% url 'cart' %}" class="relative flex flex-col items-center justify-center gap-0.5 text-slate-500 dark:text-slate-400 hover:text-lux-600 dark:hover:text-lux-400 min-w-[44px] min-h-[44px]">
+            <i class="bi bi-cart3 text-xl"></i>
+            <span class="text-[10px] font-medium">Cart</span>
+            <span id="cart-count-bottom" class="absolute top-0 right-1 bg-gold-500 text-gray-950 rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-black shadow-lg border border-white dark:border-slate-950 px-0.5 {% if not user.cart.items.count %}hidden{% endif %}">
+                {{ user.cart.items.count|default:'' }}
+            </span>
+        </a>
+        {% else %}
+        <a href="{% url 'login' %}" class="flex flex-col items-center justify-center gap-0.5 text-slate-500 dark:text-slate-400 hover:text-lux-600 dark:hover:text-lux-400 min-w-[44px] min-h-[44px]">
+            <i class="bi bi-person text-xl"></i>
+            <span class="text-[10px] font-medium">Login</span>
+        </a>
+        {% endif %}
+        {% if user.is_authenticated %}
+        <button id="mobile-profile-btn" class="flex flex-col items-center justify-center gap-0.5 text-slate-500 dark:text-slate-400 hover:text-lux-600 dark:hover:text-lux-400 min-w-[44px] min-h-[44px]">
+            <i class="bi bi-person-circle text-xl"></i>
+            <span class="text-[10px] font-medium">Profile</span>
+        </button>
+        {% endif %}
+    </div>
+</nav>
 
-<!-- Main Content -->
-<main class="pt-16 min-h-screen bg-slate-50 dark:bg-slate-900">
+<!-- Toast Container (adjusted for mobile safe area) -->
+<div id="toast-container" class="fixed top-20 right-4 sm:right-6 z-50 space-y-2 w-80 max-w-[calc(100vw-2rem)]"></div>
+
+<!-- Main Content (adjusted padding for bottom nav) -->
+<main class="pt-14 sm:pt-16 pb-20 lg:pb-0 min-h-screen bg-slate-50 dark:bg-slate-900">
     {% if messages %}
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 space-y-2">
             {% for message in messages %}
@@ -409,25 +496,21 @@
     {% block content %}{% endblock %}
 </main>
 
-<!-- Footer -->
-<!-- ═══════════════════════════════ FOOTER ═══════════════════════════════ -->
-<footer class="bg-white text-slate-600 border-t border-slate-200 transition-colors duration-300 mt-20 dark:bg-slate-950 dark:text-slate-400 dark:border-slate-800/60">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
-        
-        <!-- Top Section: Grid Links -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 pb-12 border-b border-slate-200 dark:border-slate-800/60">
-            
+<!-- Footer (improved stacking & centred text on mobile) -->
+<footer class="bg-white text-slate-600 border-t border-slate-200 transition-colors duration-300 mt-20 dark:bg-slate-950 dark:text-slate-400 dark:border-slate-800/60 pb-20 lg:pb-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 md:pt-16 pb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-12 pb-12 border-b border-slate-200 dark:border-slate-800/60">
             <!-- Brand Column -->
-            <div class="lg:col-span-2 space-y-4">
-                <a href="{% url 'home' %}" class="font-display text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-lux-400 rounded-lg w-max" aria-label="Alkyş – Home">
+            <div class="lg:col-span-2 space-y-4 text-center sm:text-left">
+                <a href="{% url 'home' %}" class="font-display text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5 justify-center sm:justify-start focus:outline-none focus-visible:ring-2 focus-visible:ring-lux-400 rounded-lg w-max mx-auto sm:mx-0" aria-label="Alkyş – Home">
                     <i class="bi bi-gem text-lux-500"></i>
                     <span>Alkyş</span>
                 </a>
-                <p class="text-sm text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">
+                <p class="text-sm text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mx-auto sm:mx-0">
                     Your trusted and modern marketplace. High-quality products and fast service at your fingertips.
                 </p>
                 <!-- Social Media Badges -->
-                <div class="flex items-center gap-3 pt-2">
+                <div class="flex items-center justify-center sm:justify-start gap-3 pt-2">
                     <a href="#" class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 border border-slate-200 text-slate-500 hover:text-lux-600 hover:border-lux-500 hover:bg-lux-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:text-white dark:hover:border-lux-500 dark:hover:bg-lux-900/20 transition-all duration-200" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
                     <a href="#" class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 border border-slate-200 text-slate-500 hover:text-lux-600 hover:border-lux-500 hover:bg-lux-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:text-white dark:hover:border-lux-500 dark:hover:bg-lux-900/20 transition-all duration-200" aria-label="TikTok"><i class="bi bi-tiktok"></i></a>
                     <a href="#" class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 border border-slate-200 text-slate-500 hover:text-lux-600 hover:border-lux-500 hover:bg-lux-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:text-white dark:hover:border-lux-500 dark:hover:bg-lux-900/20 transition-all duration-200" aria-label="Telegram"><i class="bi bi-telegram"></i></a>
@@ -435,7 +518,7 @@
             </div>
 
             <!-- Quick Navigation Column -->
-            <div>
+            <div class="text-center sm:text-left">
                 <h3 class="text-sm font-semibold text-slate-900 dark:text-white tracking-wider uppercase mb-4">Marketplace</h3>
                 <ul class="space-y-3 text-sm">
                     <li><a href="{% url 'home' %}" class="hover:text-lux-600 dark:hover:text-lux-400 transition-colors duration-200">Home</a></li>
@@ -451,7 +534,7 @@
             </div>
 
             <!-- Support / Info Column -->
-            <div>
+            <div class="text-center sm:text-left">
                 <h3 class="text-sm font-semibold text-slate-900 dark:text-white tracking-wider uppercase mb-4">Help & Information</h3>
                 <ul class="space-y-3 text-sm">
                     <li><a href="#" class="hover:text-lux-600 dark:hover:text-lux-400 transition-colors duration-200">Frequently Asked Questions</a></li>
@@ -462,38 +545,37 @@
             </div>
 
             <!-- Contact / Local Info Column -->
-            <div>
+            <div class="text-center sm:text-left">
                 <h3 class="text-sm font-semibold text-slate-900 dark:text-white tracking-wider uppercase mb-4">Contact us:</h3>
                 <ul class="space-y-3 text-sm text-slate-500 dark:text-gray-400">
-                    <li class="flex items-start gap-2.5">
+                    <li class="flex items-start gap-2.5 justify-center sm:justify-start">
                         <i class="bi bi-geo-alt text-lux-500 shrink-0 mt-0.5"></i>
                         <span>Ashgabat city, Turkmenistan</span>
                     </li>
-                    <li class="flex items-center gap-2.5">
+                    <li class="flex items-center gap-2.5 justify-center sm:justify-start">
                         <i class="bi bi-telephone text-lux-500 shrink-0"></i>
                         <a href="tel:+99312000000" class="hover:text-slate-900 dark:hover:text-white transition-colors">+993 (12) 00-00-00</a>
                     </li>
-                    <li class="flex items-center gap-2.5">
+                    <li class="flex items-center gap-2.5 justify-center sm:justify-start">
                         <i class="bi bi-envelope text-lux-500 shrink-0"></i>
                         <a href="mailto:info@alkys.com" class="hover:text-slate-900 dark:hover:text-white transition-colors">info@alkys.com</a>
                     </li>
                 </ul>
             </div>
-
         </div>
 
         <!-- Bottom Section: Copyright & Author Credits -->
-        <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+        <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
             <p>&copy; 2026 Alkyş. All rights reserved.</p>
             <p class="flex items-center gap-1.5 text-slate-400 dark:text-slate-500">
                 <span>Designed with</span>
                 <i class="bi bi-heart-fill text-red-500 text-[10px]"></i>
-                <span class="text-gray-400 font-medium">hhdeveloper</span>
+               <span class="text-gray-400 font-normal italic tracking-wide">AI developer</span>
             </p>
         </div>
-
     </div>
 </footer>
+
 <script>
     // ── CSRF ────────────────────────────────────────────────────────
     function getCsrfToken() {
@@ -521,7 +603,7 @@
     // ── Cart count update (with bounce) ──────────────────────────────
     function updateCartCount(countStr) {
         const count = parseInt(countStr);
-        ['cart-count', 'cart-count-mobile', 'cart-count-drawer'].forEach(id => {
+        ['cart-count', 'cart-count-mobile', 'cart-count-drawer', 'cart-count-bottom'].forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
 
@@ -530,7 +612,7 @@
                 el.classList.remove('hidden');
                 // Re-trigger animation
                 el.classList.remove('cart-bounce');
-                void el.offsetWidth; // Force reflow to allow immediate re-animation
+                void el.offsetWidth; // Force reflow
                 el.classList.add('cart-bounce');
             } else {
                 el.classList.add('hidden');
@@ -576,11 +658,13 @@
         btn.addEventListener('click', () => btn.closest('.message-alert').remove());
     });
 
-    // ── Mobile menu logic ────────────────────────────────────────────
+    // ── Mobile menu logic (with backdrop & scroll lock) ──────────────
     const mobileMenu = document.getElementById('mobile-menu');
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const hamburgerIcon = document.getElementById('hamburger-icon');
     const closeIcon = document.getElementById('close-icon');
+    const backdrop = document.getElementById('menu-backdrop');
+    const body = document.body;
 
     function openMobileMenu() {
         mobileMenu.style.maxHeight = mobileMenu.scrollHeight + 'px';
@@ -588,6 +672,8 @@
         hamburgerIcon.classList.add('hidden');
         closeIcon.classList.remove('hidden');
         mobileMenuBtn.setAttribute('aria-expanded', 'true');
+        backdrop.classList.add('show');
+        body.classList.add('menu-open');
     }
     function closeMobileMenu() {
         mobileMenu.style.maxHeight = '0px';
@@ -595,6 +681,8 @@
         hamburgerIcon.classList.remove('hidden');
         closeIcon.classList.add('hidden');
         mobileMenuBtn.setAttribute('aria-expanded', 'false');
+        backdrop.classList.remove('show');
+        body.classList.remove('menu-open');
     }
 
     mobileMenuBtn?.addEventListener('click', () => {
@@ -605,6 +693,8 @@
         }
     });
 
+    backdrop.addEventListener('click', closeMobileMenu);
+
     // Close menu when clicking a link inside it
     mobileMenu.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', closeMobileMenu);
@@ -612,15 +702,26 @@
 
     // Close menu when clicking outside
     document.addEventListener('click', (e) => {
-        if (!mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+        if (!mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target) && !backdrop.contains(e.target)) {
             closeMobileMenu();
         }
     });
 
-    // ── Mobile search toggle ─────────────────────────────────────────
-    document.getElementById('mobile-search-btn')?.addEventListener('click', () => {
-        document.getElementById('mobile-search-form').classList.toggle('hidden');
-    });
+    // ── Mobile search toggle (auto-focus) ───────────────────────────
+    const mobileSearchBtn = document.getElementById('mobile-search-btn');
+    const bottomSearchBtn = document.getElementById('bottom-search-btn');
+    const mobileSearchForm = document.getElementById('mobile-search-form');
+    const mobileSearchInput = document.getElementById('mobile-search-input');
+
+    function toggleMobileSearch() {
+        const isHidden = mobileSearchForm.classList.toggle('hidden');
+        if (!isHidden && mobileSearchInput) {
+            mobileSearchInput.focus();
+        }
+    }
+
+    mobileSearchBtn?.addEventListener('click', toggleMobileSearch);
+    bottomSearchBtn?.addEventListener('click', toggleMobileSearch);
 
     // ── Navbar scroll effect ─────────────────────────────────────────
     const navbar = document.getElementById('mainNavbar');
@@ -652,7 +753,7 @@
         });
     }
 
-    // ── Dark mode toggle (synced desktop + mobile) ────────────────────
+    // ── Dark mode toggle (synced desktop + mobile + bottom bar) ──────
     function applyThemeIcons(isDark) {
         ['theme-toggle-dark-icon', 'theme-toggle-dark-icon-mobile'].forEach(
             id => document.getElementById(id)?.classList.toggle('hidden', isDark));

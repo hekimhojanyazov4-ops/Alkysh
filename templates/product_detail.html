@@ -1,13 +1,104 @@
 {% extends 'base.html' %}
 {% block title %}{{ product.name }}{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* ========================================
+       Review Section – soft animations & shadows
+    ======================================== */
+    .review-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        animation: fadeInUp 0.6s ease backwards;
+    }
+    .review-card:hover {
+        transform: translateY(-4px);
+    }
+    .review-card.shadow-rose {
+        box-shadow: 0 4px 20px rgba(244, 63, 94, 0.25);
+    }
+    .review-card.shadow-amber {
+        box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
+    }
+    .review-card.shadow-sky {
+        box-shadow: 0 4px 20px rgba(14, 165, 233, 0.25);
+    }
+    .review-card.shadow-emerald {
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
+    }
+    .review-card.shadow-violet {
+        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.25);
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(24px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Star rating interactive widget */
+    .star-widget {
+        display: flex;
+        gap: 4px;
+        direction: ltr;  /* stars click left-to-right */
+    }
+    .star-widget .star {
+        font-size: 2rem;
+        color: #d1d5db; /* gray-300 */
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+    }
+    .star-widget .star:hover {
+        transform: scale(1.15);
+    }
+    @keyframes pulse-ring {
+        0% {
+            box-shadow: 0 0 0 0px rgba(167, 139, 250, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 6px rgba(167, 139, 250, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0px rgba(167, 139, 250, 0);
+        }
+    }
+    .star-widget .star:focus {
+        outline: none;
+        transform: scale(1.1);
+        color: #a78bfa;
+        text-shadow: 2px 2px 0px #a78bfa, 4px 4px 0px rgba(167, 139, 250, 0.3);
+        animation: none;
+    }
+    .star-widget .star.active,
+    .star-widget .star.filled {
+        color: #f59e0b; /* amber-500 */
+    }
+    .star-widget:hover .star {
+        color: #fcd34d; /* amber-300 */
+    }
+    .star-widget .star:hover ~ .star {
+        color: #d1d5db; /* back to gray on stars after hover */
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 py-6 md:py-12">
-    <!-- Esasy haryt bölümi -->
+    <!-- Esasy haryt bölümi (main product block, unchanged) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-10 reveal">
-        <!-- Täze galereýa bölümi -->
+        <!-- Image gallery (unchanged) -->
         <div class="flex flex-col md:flex-row gap-4">
-            <!-- Dik thumbnailer (çepde) -->
             <div class="flex md:flex-col gap-3 order-2 md:order-1 overflow-x-auto md:overflow-visible scrollbar-hide">
                 {% for img in product.images.all %}
                 <div class="shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 cursor-pointer transition-colors thumb-item {% if forloop.first %}border-lux-400{% else %}border-transparent hover:border-lux-400{% endif %}"
@@ -17,7 +108,6 @@
                 </div>
                 {% endfor %}
             </div>
-            <!-- Esasy surat (sagda) -->
             <div class="flex-1 order-1 md:order-2 relative">
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lux overflow-hidden relative">
                     <div id="zoomLens" class="absolute pointer-events-none opacity-0 z-50 text-white drop-shadow-md transition-opacity duration-200">
@@ -30,7 +120,7 @@
             </div>
         </div>
 
-        <!-- Maglumat bölümi (üýtgemedi) -->
+        <!-- Product details (unchanged) -->
         <div>
             <p class="text-lux-600 font-medium">{{ product.category.name }}</p>
             <h1 class="font-display text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mt-2">{{ product.name }}</h1>
@@ -44,7 +134,6 @@
                 {% endif %}
             </div>
 
-            <!-- Rating Summary -->
             <div class="flex items-center gap-2 mt-2">
                 <div class="flex text-amber-400">
                     <i class="bi bi-star{% if avg_rating >= 1 %}-fill{% endif %}"></i>
@@ -64,31 +153,39 @@
             <div class="border-t border-slate-200 dark:border-slate-700 mt-8 pt-6">
                 {% if product.available %}
                     <div class="flex flex-wrap items-center gap-4">
-                        <div class="flex items-center border border-slate-300 dark:border-slate-600 rounded-full shrink-0">
-                            <button class="px-3 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-l-full" onclick="changeQty(-1)">−</button>
-                            <input id="qtyInput" type="text" value="1" class="w-12 text-center font-semibold focus:outline-none dark:bg-transparent dark:text-white" readonly>
-                            <button class="px-3 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-r-full" onclick="changeQty(1)">+</button>
-                        </div>
-                        <button id="addToCartBtn" data-product-id="{{ product.id }}" class="flex-1 min-w-[160px] bg-lux-600 hover:bg-lux-700 text-white active:text-slate-900 dark:active:text-white py-3 px-8 rounded-full font-medium transition-all shadow-lg hover:shadow-xl flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-2 inline shrink-0">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                            </svg>
-                            Add to Cart
-                        </button>
-                        <button id="favoriteBtn" data-product-id="{{ product.id }}" 
-                                class="p-3 rounded-full border {% if is_favorite %}bg-red-50 border-red-200 text-red-500{% else %}border-slate-200 text-slate-400{% endif %} active:text-slate-900 dark:active:text-white hover:scale-110 transition-all shadow-md">
-                            <i class="bi {% if is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %} text-2xl"></i>
-                        </button>
+                        {% if user.role != 'ADMIN' %}
+                            <div class="flex items-center border border-slate-300 dark:border-slate-600 rounded-full shrink-0">
+                                <button class="px-3 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-l-full" onclick="changeQty(-1)">−</button>
+                                <input id="qtyInput" type="text" value="1" class="w-12 text-center font-semibold focus:outline-none dark:bg-transparent dark:text-white" readonly>
+                                <button class="px-3 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-r-full" onclick="changeQty(1)">+</button>
+                            </div>
+                            <button id="addToCartBtn" data-product-id="{{ product.id }}" class="flex-1 min-w-[160px] bg-lux-600 hover:bg-lux-700 text-white active:text-slate-900 dark:active:text-white py-3 px-8 rounded-full font-medium transition-all shadow-lg hover:shadow-xl flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-2 inline shrink-0">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                                </svg>
+                                Add to Cart
+                            </button>
+                            <button id="favoriteBtn" data-product-id="{{ product.id }}" 
+                                    class="p-3 rounded-full border {% if is_favorite %}bg-red-50 border-red-200 text-red-500{% else %}border-slate-200 text-slate-400{% endif %} active:text-slate-900 dark:active:text-white hover:scale-110 transition-all shadow-md">
+                                <i class="bi {% if is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %} text-2xl"></i>
+                            </button>
+                        {% else %}
+                            <p class="text-sm text-slate-500 italic">Admin view – actions hidden</p>
+                        {% endif %}
                     </div>
                 {% else %}
                     <div class="text-red-500 font-semibold">Out of stock</div>
                 {% endif %}
             </div>
+            {% if user.role != 'ADMIN' %}
             <div class="mt-4 text-sm text-slate-500 dark:text-slate-400">Sold by <span class="font-medium text-slate-700 dark:text-slate-300">{{ product.seller.fullname }}</span></div>
+            {% endif %}
         </div>
     </div>
 
-    <!-- Review Section -->
+    <!-- =========================================================== -->
+    <!-- ENHANCED REVIEW SECTION -->
+    <!-- =========================================================== -->
     <div class="mt-20 reveal">
         <div class="border-b border-slate-100 dark:border-slate-800 pb-8 mb-12 flex flex-wrap items-end justify-between gap-6">
             <div>
@@ -98,10 +195,16 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-16">
-            <!-- Left: Existing Reviews -->
-            <div class="lg:col-span-2 space-y-10">
+            <!-- Left: Existing Reviews with soft animations & colored shadows -->
+            <div class="lg:col-span-2 space-y-8">
                 {% for review in reviews %}
-                <div class="group">
+                <div class="review-card bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-2xl p-6 border border-white/20 dark:border-slate-700/30 
+                            {% if review.rating >= 5 %}shadow-emerald
+                            {% elif review.rating == 4 %}shadow-sky
+                            {% elif review.rating == 3 %}shadow-amber
+                            {% elif review.rating == 2 %}shadow-rose
+                            {% else %}shadow-rose{% endif %}"
+                     style="animation-delay: {{ forloop.counter0 }}00ms;">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full bg-lux-gradient flex items-center justify-center text-white font-bold">
@@ -112,9 +215,9 @@
                                 <p class="text-xs text-slate-400">{{ review.created_at|date:"F d, Y" }}</p>
                             </div>
                         </div>
-                        <div class="flex text-amber-400 text-xs">
+                        <div class="flex text-amber-400 text-xs gap-0.5">
                             {% for i in "12345" %}
-                                <i class="bi bi-star{% if review.rating >= forloop.counter %}-fill{% endif %}"></i>
+                                <i class="bi bi-star{% if review.rating >= forloop.counter %}-fill{% endif %} text-sm transition-transform hover:scale-125"></i>
                             {% endfor %}
                         </div>
                     </div>
@@ -125,23 +228,52 @@
                 {% endfor %}
             </div>
 
-            <!-- Right: Add Review Form -->
+            <!-- Right: Add Review Form with interactive star rating -->
             {% if user.is_authenticated and user.role == 'CUSTOMER' %}
             <div class="lg:col-span-1">
-                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-3xl p-8 sticky top-24">
+                <div class="bg-slate-50 dark:bg-slate-800/50 backdrop-blur-md rounded-3xl p-8 sticky top-24 border border-white/20 dark:border-slate-700/30 shadow-lg">
                     <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-6">Write a Review</h3>
-                    <form action="{% url 'add_review' product.id %}" method="POST" class="space-y-4">
+                    <form id="reviewForm" action="{% url 'add_review' product.id %}" method="POST" class="space-y-5">
                         {% csrf_token %}
-                        {{ review_form.as_p }}
-                        <button type="submit" class="w-full bg-lux-600 text-white active:text-slate-900 dark:active:text-white py-3 rounded-xl font-medium hover:bg-lux-700 transition-all">Submit Review</button>
+                        <!-- Custom Star Rating Input -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Your Rating</label>
+                            <div class="star-widget" id="starWidget" role="radiogroup" aria-label="Rate this product from 1 to 5 stars">
+                                <span class="star" data-value="1" role="radio" aria-checked="false" tabindex="0" aria-label="1 Star">★</span>
+                                <span class="star" data-value="2" role="radio" aria-checked="false" tabindex="0" aria-label="2 Stars">★</span>
+                                <span class="star" data-value="3" role="radio" aria-checked="false" tabindex="0" aria-label="3 Stars">★</span>
+                                <span class="star" data-value="4" role="radio" aria-checked="false" tabindex="0" aria-label="4 Stars">★</span>
+                                <span class="star" data-value="5" role="radio" aria-checked="false" tabindex="0" aria-label="5 Stars">★</span>
+                            </div>
+                            <input type="hidden" name="rating" id="ratingInput" value="0">
+                            <!-- Display Django form errors for rating if any -->
+                            {% if review_form.rating.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ review_form.rating.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <!-- Comment textarea -->
+                        <div>
+                            <label for="id_comment" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Your Review</label>
+                            <textarea name="comment" id="id_comment" rows="4" 
+                                      class="w-full rounded-xl border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 p-3 text-sm focus:ring-2 focus:ring-lux-400 focus:border-transparent focus:outline-none transition-shadow"
+                                      placeholder="Share your thoughts...">{{ review_form.comment.value|default:'' }}</textarea>
+                            {% if review_form.comment.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ review_form.comment.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <button type="submit" 
+                                class="w-full bg-lux-600 text-white active:text-slate-900 dark:active:text-white py-3 rounded-xl font-medium hover:bg-lux-700 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                            Submit Review
+                        </button>
                     </form>
                 </div>
             </div>
             {% endif %}
         </div>
     </div>
+    <!-- END REVIEW SECTION -->
 
-    <!-- Degişli harytlar (Related Products) -->
+    <!-- Related Products (unchanged) -->
     {% if related_products %}
     <section class="mt-16 reveal">
         <h2 class="text-2xl md:text-3xl font-display font-bold text-slate-900 dark:text-white mb-6">
@@ -177,7 +309,7 @@
     </section>
     {% endif %}
 
-    <!-- Soňky görlenler (Recently Viewed) -->
+    <!-- Recently Viewed (unchanged) -->
     {% if recently_viewed %}
     <section class="mt-12 reveal">
         <h2 class="text-2xl md:text-3xl font-display font-bold text-slate-900 dark:text-white mb-6">
@@ -217,7 +349,7 @@
 
 {% block extra_js %}
 <script>
-    // Suratlar barada maglumatlary JavaScript-e geçirýäris
+    // Product image gallery & zoom (unchanged)
     const productImages = [
         {% for img in product.images.all %}
         "{{ img.image.url }}"{% if not forloop.last %},{% endif %}
@@ -227,29 +359,19 @@
     let currentIndex = 0;
     let autoSlideTimer = null;
 
-    // Esasy suraty we thumbnail aktiwligini täzeleýän funksiýa
     function setMainImage(index) {
         currentIndex = index;
         const mainImg = document.getElementById('mainImage');
         mainImg.src = productImages[index];
         mainImg.dataset.zoom = productImages[index];
 
-        // Thumbnail-leriň çäklerini aktiwleşdir
         document.querySelectorAll('.thumb-item').forEach((item, i) => {
-            if (i === index) {
-                item.classList.add('border-lux-400');
-                item.classList.remove('border-transparent');
-            } else {
-                item.classList.remove('border-lux-400');
-                item.classList.add('border-transparent');
-            }
+            item.classList.toggle('border-lux-400', i === index);
+            item.classList.toggle('border-transparent', i !== index);
         });
-
-        // Awtomatiki slaýdy täzeden başlat (ýa-da duruz)
         resetAutoSlide();
     }
 
-    // Indiki surata geçmek
     function nextImage() {
         if (productImages.length > 0) {
             currentIndex = (currentIndex + 1) % productImages.length;
@@ -257,15 +379,13 @@
         }
     }
 
-    // Awtomatiki slaýdy başlamak
     function startAutoSlide() {
         if (productImages.length > 1) {
             stopAutoSlide();
-            autoSlideTimer = setInterval(nextImage, 4000); // 4 sekuntdan üýtgeýär
+            autoSlideTimer = setInterval(nextImage, 4000);
         }
     }
 
-    // Slaýdy duruzmak
     function stopAutoSlide() {
         if (autoSlideTimer) {
             clearInterval(autoSlideTimer);
@@ -273,30 +393,21 @@
         }
     }
 
-    // Ulanyjy el bilen surat saýlanda slaýd taymerini sıfırla
     function resetAutoSlide() {
         stopAutoSlide();
         startAutoSlide();
     }
 
-    // Sahypa ýüklenende slaýdy işe giriz
     document.addEventListener('DOMContentLoaded', function() {
         if (productImages.length > 0) {
-            // Ilkinji surat boýunça thumbnail-i aktiw et (eýýäm şablon bilen gelýär, ýöne anyk bolaly)
             document.querySelectorAll('.thumb-item').forEach((item, i) => {
-                if (i === 0) {
-                    item.classList.add('border-lux-400');
-                    item.classList.remove('border-transparent');
-                } else {
-                    item.classList.remove('border-lux-400');
-                    item.classList.add('border-transparent');
-                }
+                item.classList.toggle('border-lux-400', i === 0);
+                item.classList.toggle('border-transparent', i !== 0);
             });
             startAutoSlide();
         }
     });
 
-    // Möçber üýtgetmek
     function changeQty(delta) {
         const input = document.getElementById('qtyInput');
         let val = parseInt(input.value) || 1;
@@ -305,7 +416,6 @@
         input.value = val;
     }
 
-    // Sebede goşmak
     document.getElementById('addToCartBtn')?.addEventListener('click', async function() {
         const id = this.dataset.productId;
         const qty = parseInt(document.getElementById('qtyInput').value);
@@ -318,7 +428,6 @@
         }
     });
 
-    // Halananlara goşmak / aýyrmak
     document.getElementById('favoriteBtn')?.addEventListener('click', async function() {
         const id = this.dataset.productId;
         const res = await ajaxPost(`/favorites/toggle/${id}/`);
@@ -337,7 +446,6 @@
         }
     });
 
-    // Surat ulaltma (zoom) effekti
     const mainImg = document.getElementById('mainImage');
     const zoomLens = document.getElementById('zoomLens');
     
@@ -351,7 +459,6 @@
 
         if (zoomLens) {
             zoomLens.style.opacity = '1';
-            // Center the 24px icon on the cursor/touch point
             zoomLens.style.left = (pointer.clientX - left - 12) + 'px';
             zoomLens.style.top = (pointer.clientY - top - 12) + 'px';
         }
@@ -369,5 +476,86 @@
         zoomHandler(e);
     }, { passive: false });
     mainImg?.addEventListener('touchend', resetZoom);
+
+    // ========================================
+    // Interactive Star Rating Widget
+    // ========================================
+    const starWidget = document.getElementById('starWidget');
+    const ratingInput = document.getElementById('ratingInput');
+
+    if (starWidget && ratingInput) {
+        const stars = starWidget.querySelectorAll('.star');
+
+        function highlightStars(value) {
+            stars.forEach((star, idx) => {
+                const isActive = idx < value;
+                star.classList.toggle('active', isActive);
+                // Update aria-checked for screen readers
+                star.setAttribute('aria-checked', (idx + 1 === value) ? 'true' : 'false');
+            });
+        }
+
+        // Click handler
+        stars.forEach(star => {
+            // Keyboard accessibility: trigger selection with Enter or Space
+            star.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    star.click();
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const currentValue = parseInt(star.dataset.value);
+                    const prevStar = starWidget.querySelector(`.star[data-value="${currentValue - 1}"]`);
+                    if (prevStar) {
+                        prevStar.focus();
+                        prevStar.click();
+                    } else {
+                        // If at the first star, loop to the last or do nothing
+                        // For now, let's just stay at the first star
+                    }
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    const currentValue = parseInt(star.dataset.value);
+                    const nextStar = starWidget.querySelector(`.star[data-value="${currentValue + 1}"]`);
+                    if (nextStar) {
+                        nextStar.focus();
+                        nextStar.click();
+                    } else {
+                        // If at the last star, loop to the first or do nothing
+                    }
+                }
+            });
+
+            star.addEventListener('click', () => {
+                const value = parseInt(star.dataset.value);
+                ratingInput.value = value;
+                highlightStars(value);
+                // Keep filled after click (no hover-state removal)
+            });
+
+            // Hover handlers
+            star.addEventListener('mouseenter', () => {
+                const value = parseInt(star.dataset.value);
+                stars.forEach((s, idx) => {
+                    s.classList.toggle('filled', idx < value);
+                });
+            });
+            star.addEventListener('mouseleave', () => {
+                // Revert to clicked rating (or 0)
+                const currentRating = parseInt(ratingInput.value) || 0;
+                stars.forEach((s, idx) => {
+                    s.classList.toggle('filled', idx < currentRating);
+                    // Also keep 'active' class for permanent fill
+                    s.classList.toggle('active', idx < currentRating);
+                });
+            });
+        });
+
+        // If form has initial rating (e.g., from previous validation error)
+        const initialRating = parseInt(ratingInput.value);
+        if (initialRating > 0) {
+            highlightStars(initialRating);
+        }
+    }
 </script>
 {% endblock %}

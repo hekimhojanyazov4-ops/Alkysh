@@ -2,17 +2,41 @@
 {% load static %}
 {% block title %}Register - LuxMarket{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* Global soft transitions for a premium, fluid feel */
+    * {
+        transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+    }
+
+    @keyframes float-gem {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    .animate-float-gem {
+        display: inline-block;
+        animation: float-gem 3s ease-in-out infinite;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="min-h-screen flex items-center justify-center py-20 px-4 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-black">
-    <div class="max-w-md w-full bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden reveal">
+    <div class="relative max-w-md w-full bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl overflow-hidden reveal">
+        <!-- Subtle background shift layer -->
+        <div class="absolute inset-0 pointer-events-none navbar-animate-shift opacity-30"></div>
+
         <!-- Header -->
-        <div class="bg-lux-gradient px-6 py-8 md:px-8 md:py-10 text-center text-white">
-            <h2 class="font-display text-3xl font-bold">Join LuxMarket</h2>
-            <p class="text-white/80 text-sm mt-2">Create your premium account</p>
+        <div class="relative bg-lux-gradient px-6 py-10 md:px-8 md:py-12 text-center text-white border-b border-white/10">
+            <div class="flex items-center justify-center gap-3 mb-3">
+                <i class="bi bi-gem text-3xl text-gold-400 drop-shadow-md animate-float-gem"></i>
+                <h1 class="font-display text-4xl md:text-5xl font-bold tracking-[0.1em] italic drop-shadow-xl">Alkyş</h1>
+            </div>
+            <p class="text-white/70 text-[10px] font-black uppercase tracking-[0.4em] ml-1">Create your premium account</p>
         </div>
 
         <!-- Form -->
-        <div class="p-8">
+        <div class="relative p-8 md:p-10">
             <form method="post" novalidate enctype="multipart/form-data" action="{% url 'register' %}">
                 {% csrf_token %}
 
@@ -27,7 +51,7 @@
 
                 {% for field in form %}
                     <div class="mb-5">
-                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label for="{{ field.id_for_label }}" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">
                             {{ field.label }}
                             {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
                         </label>
@@ -129,14 +153,14 @@
 
                 {# Terms of service checkbox (client‑side only – add server‑side validation in your view) #}
                 <div class="mb-6">
-                    <label class="flex items-start text-xs text-gray-500 dark:text-gray-400 cursor-pointer">
+                    <label class="flex items-start text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer">
                         <input type="checkbox" required
-                               class="w-4 h-4 mt-0.5 rounded text-lux-600 focus:ring-lux-500 border-gray-300 dark:border-gray-700 dark:bg-gray-900 mr-2">
+                               class="w-4 h-4 mt-[-1px] rounded text-lux-600 focus:ring-lux-500 border-gray-300 dark:border-gray-700 dark:bg-gray-900 mr-3">
                         <span>
                             I agree to the
-                            <a href="{% url 'terms_of_use' %}" class="text-lux-600 hover:underline">Terms of Service</a>
+                            <a href="{% url 'terms_of_use' %}" class="text-lux-600 hover:underline">Terms</a>
                             and
-                            <a href="{% url 'privacy_policy' %}" class="text-lux-600 hover:underline">Privacy Policy</a>.
+                            <a href="{% url 'privacy_policy' %}" class="text-lux-600 hover:underline">Privacy</a>.
                         </span>
                     </label>
                 </div>

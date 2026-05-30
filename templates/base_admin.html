@@ -120,11 +120,20 @@
                 </a>
             </div>
         </nav>
-        <div class="p-6 border-t border-slate-800">
-            <a href="{% url 'logout' %}" class="sidebar-link flex items-center space-x-3 p-3 text-red-400 hover:bg-red-900/20 rounded-lg">
-                <i class="bi bi-box-arrow-left"></i> <span>Logout</span>
+        <div class="p-4 border-t border-slate-800 flex flex-col gap-1">
+            <!-- Ссылка возврата на сайт (Второстепенная) -->
+            <a href="{% url 'home' %}" class="flex items-center space-x-3 p-3 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 rounded-lg transition-colors text-sm">
+                <i class="bi bi-arrow-left"></i>
+                <span>Back to site</span>
+            </a>
+
+            <!-- Ссылка выхода (Акцентная/Опасная) -->
+            <a href="{% url 'logout' %}" class="flex items-center space-x-3 p-3 text-red-400 hover:text-red-300 hover:bg-red-950/30 rounded-lg transition-colors text-sm">
+                <i class="bi bi-box-arrow-left"></i>
+                <span>Logout</span>
             </a>
         </div>
+
     </aside>
 
     <!-- Main Content -->

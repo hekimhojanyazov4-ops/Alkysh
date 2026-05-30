@@ -4,7 +4,7 @@
 
 {% block content %}
 <!-- ================================================================ -->
-<!-- PREMIUM HERO SLIDER                                              -->
+<!-- PREMIUM HERO SLIDER (3 slides) – now with glassmorphism panels   -->
 <!-- ================================================================ -->
 <div class="relative w-full h-[600px] md:h-[750px] overflow-hidden bg-gray-900">
     <div id="hero-slider" class="flex h-full transition-transform duration-1000 ease-out">
@@ -14,12 +14,15 @@
                  class="absolute inset-0 w-full h-full object-cover opacity-70" alt="Luxury 1">
             <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
             <div class="relative z-10 h-full max-w-7xl mx-auto px-4 flex flex-col justify-center items-start text-left">
-                <span class="text-gold-400 font-bold uppercase tracking-[0.3em] mb-4 animate-in">Premium Collection</span>
-                <h1 class="font-display text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 animate-in delay-100 leading-tight">Modern <br>Elegance</h1>
-                <p class="max-w-xl text-base md:text-lg text-gray-300 mb-8 animate-in delay-200">The world's premier brands are now exclusively on Alkyş. Refine your style with us.</p>
-                <div class="flex gap-4 animate-in delay-300">
-                    <a href="#auth-section" class="btn-lux-premium text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold shadow-lg text-sm sm:text-base">Shop Now</a>
-                    <a href="{% url 'register' %}" class="glass text-white px-8 py-4 rounded-full font-bold hover:bg-white/10 transition-all">Register</a>
+                <!-- Glassmorphism card wrapper for the text -->
+                <div class="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-8 sm:p-10 shadow-2xl max-w-xl animate-in">
+                    <span class="text-gold-400 font-bold uppercase tracking-[0.3em] mb-4">Premium Collection</span>
+                    <h1 class="font-display text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 delay-100 leading-tight">Modern <br>Elegance</h1>
+                    <p class="max-w-xl text-base md:text-lg text-gray-300 mb-8 delay-200">The world's premier brands are now exclusively on Alkyş. Refine your style with us.</p>
+                    <div class="flex gap-4 delay-300">
+                        <a href="#auth-section" class="btn-lux-premium text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold shadow-lg text-sm sm:text-base">Shop Now</a>
+                        <a href="{% url 'register' %}" class="glass backdrop-blur-md bg-white/10 border border-white/20 text-white px-8 py-4 rounded-full font-bold hover:bg-white/20 transition-all">Register</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -29,11 +32,29 @@
                  class="absolute inset-0 w-full h-full object-cover opacity-70" alt="Luxury 2">
             <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
             <div class="relative z-10 h-full max-w-7xl mx-auto px-4 flex flex-col justify-center items-start text-left">
-                <span class="text-gold-400 font-bold uppercase tracking-[0.3em] mb-4 animate-in">Exclusive Brands</span>
-                <h1 class="font-display text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 animate-in delay-100 leading-tight">Your Gold <br>Package</h1>
-                <p class="max-w-xl text-base md:text-lg text-gray-300 mb-8 animate-in delay-200">Selected brands and special discounts await you. Join the exclusive marketplace experience.</p>
-                <div class="flex gap-4">
-                    <a href="#auth-section" class="btn-gold-premium bg-gold-500 text-gray-900 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold shadow-lg text-sm sm:text-base animate-in delay-300">View Brands</a>
+                <div class="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-8 sm:p-10 shadow-2xl max-w-xl animate-in">
+                    <span class="text-gold-400 font-bold uppercase tracking-[0.3em] mb-4">Exclusive Brands</span>
+                    <h1 class="font-display text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 delay-100 leading-tight">Your Gold <br>Package</h1>
+                    <p class="max-w-xl text-base md:text-lg text-gray-300 mb-8 delay-200">Selected brands and special discounts await you. Join the exclusive marketplace experience.</p>
+                    <div class="flex gap-4">
+                        <a href="#auth-section" class="btn-gold-premium bg-gold-500 text-gray-900 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold shadow-lg text-sm sm:text-base delay-300">View Brands</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Slide 3 -->
+        <div class="w-full h-full flex-shrink-0 relative">
+            <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070"
+                 class="absolute inset-0 w-full h-full object-cover opacity-70" alt="Luxury 3">
+            <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
+            <div class="relative z-10 h-full max-w-7xl mx-auto px-4 flex flex-col justify-center items-start text-left">
+                <div class="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl p-8 sm:p-10 shadow-2xl max-w-xl animate-in">
+                    <span class="text-gold-400 font-bold uppercase tracking-[0.3em] mb-4">Join the Community</span>
+                    <h1 class="font-display text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 delay-100 leading-tight">Sell With <br>Confidence</h1>
+                    <p class="max-w-xl text-base md:text-lg text-gray-300 mb-8 delay-200">Turn your passion into profit. List your luxury items and reach thousands of eager buyers on Alkyş.</p>
+                    <div class="flex gap-4 delay-300">
+                        <a href="{% url 'register' %}" class="btn-lux-premium text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold shadow-lg text-sm sm:text-base">Become a Seller</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -43,28 +64,50 @@
     <div class="absolute top-1/2 right-8 -translate-y-1/2 flex flex-col gap-3 z-20">
         <button onclick="goToSlide(0)" class="hero-dot w-2 h-8 rounded-full bg-white/30 hover:bg-lux-500 transition-all" aria-label="Slide 1"></button>
         <button onclick="goToSlide(1)" class="hero-dot w-2 h-8 rounded-full bg-white/30 hover:bg-lux-500 transition-all" aria-label="Slide 2"></button>
+        <button onclick="goToSlide(2)" class="hero-dot w-2 h-8 rounded-full bg-white/30 hover:bg-lux-500 transition-all" aria-label="Slide 3"></button>
     </div>
 </div>
 
-<!-- Guest Ads Section (static grid, no slider) -->
+<!-- Guest Ads Section – glassmorphism cards over a subtle gradient background -->
 {% if not user.is_authenticated %}
-<section class="bg-white dark:bg-gray-800 py-20 border-t border-gray-100 dark:border-gray-700">
+<section class="relative bg-gradient-to-br from-gray-100 via-white to-gray-200 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 py-20 border-t border-gray-100 dark:border-gray-700">
     <div class="max-w-7xl mx-auto px-4">
         <h2 class="text-3xl font-display font-bold text-center mb-12 dark:text-white">Experience Alkyş</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 reveal">
-            {% for ad in ads %}
-            <div class="bg-gray-50 dark:bg-gray-900 rounded-3xl shadow-lux overflow-hidden hover-scale">
-                <img src="{{ ad.image }}" alt="{{ ad.title }}" class="w-full h-56 object-cover">
-                <div class="p-6">
-                    <h3 class="font-bold text-xl text-gray-900 dark:text-white">{{ ad.title }}</h3>
-                    <p class="text-gray-500 mt-2 text-sm">{{ ad.subtitle }}</p>
-                    <a href="{{ ad.link|default:'#' }}"
-                       class="btn-lux-premium mt-6 inline-block text-white px-6 py-2.5 rounded-full text-sm font-semibold shadow-md">
-                        {{ ad.cta_text }}
-                    </a>
+        
+        <div class="relative group max-w-4xl mx-auto">
+            <!-- Controls -->
+            <button onclick="prevAd()" class="absolute -left-4 sm:-left-12 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white dark:bg-gray-800 rounded-full shadow-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <button onclick="nextAd()" class="absolute -right-4 sm:-right-12 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white dark:bg-gray-800 rounded-full shadow-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+
+            <div id="ads-carousel-wrapper" class="overflow-hidden rounded-[2.5rem]">
+                <div id="ads-track" class="flex transition-transform duration-700 cubic-bezier(0.4, 0, 0.2, 1)">
+                    {% for ad in ads %}
+                    <div class="w-full flex-shrink-0 px-2">
+                        <!-- Glass card for each ad -->
+                        <div class="relative backdrop-blur-xl bg-white/70 dark:bg-white/10 border border-white/30 dark:border-white/10 rounded-3xl shadow-lux overflow-hidden flex flex-col md:flex-row h-full">
+                            <!-- Subtle background shift layer -->
+                            <div class="absolute inset-0 pointer-events-none navbar-animate-shift"></div>
+                            <img src="{{ ad.image }}" alt="{{ ad.title }}" class="w-full md:w-1/2 h-64 md:h-80 object-cover">
+                            <div class="p-8 md:p-10 flex flex-col justify-center flex-1">
+                                <h3 class="font-display font-bold text-2xl text-gray-900 dark:text-white">{{ ad.title }}</h3>
+                                <p class="text-gray-500 dark:text-gray-300 mt-4 text-base leading-relaxed">{{ ad.subtitle }}</p>
+                                <a href="{{ ad.link|default:'#' }}"
+                                   class="btn-lux-premium mt-8 inline-block text-center text-white px-8 py-3 rounded-full text-sm font-semibold shadow-md w-max">
+                                    {{ ad.cta_text }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
-            {% endfor %}
+
+            <!-- Carousel Progress Indicator -->
+            <div id="ads-progress" class="flex justify-center gap-2 mt-8"></div>
         </div>
     </div>
 </section>
@@ -75,7 +118,7 @@
 <!-- ================================================================ -->
 {% if user.is_authenticated %}
 <div id="auth-section">
-    <!-- Categories Grid (visual tiles) -->
+    <!-- Categories – glass overlay on tile text -->
     {% if categories %}
     <section class="bg-white dark:bg-gray-900 py-16 border-b border-gray-100 dark:border-gray-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -84,37 +127,81 @@
                 <p class="mt-3 text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">Explore our curated collections of premium products</p>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {% for cat in categories %}
-                <a href="{% url 'home' %}?category={{ cat.slug }}"
-                   data-category-slug="{{ cat.slug }}"
-                   data-category-name="{{ cat.name }}"
-                   class="category-tile group relative w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-lg hover:shadow-[0_0_40px_rgba(124,58,237,0.3)] transition-all duration-500 transform hover:-translate-y-2 focus:outline-none hover:ring-2 hover:ring-lux-400/50"
-                   style="background-image: url('{% if cat.first_product_image %}{{ cat.first_product_image }}{% else %}{% static 'images/placeholder.jpg' %}{% endif %}'); background-size: cover; background-position: center;"
-                >
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent transition-opacity duration-500 group-hover:opacity-80"></div>
-                    <div class="absolute bottom-0 left-0 right-0 p-5 text-white text-left">
-                        <h3 class="text-lg sm:text-xl font-bold drop-shadow-lg mb-1">{{ cat.name }}</h3>
-                        {% if cat.description %}
-                            <p class="text-xs sm:text-sm text-white/80 line-clamp-2 drop-shadow">{{ cat.description }}</p>
-                        {% endif %}
-                        <span class="mt-2 inline-flex items-center text-xs font-semibold text-lux-300 group-hover:translate-x-1 transition-transform duration-300">
-                            Explore
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 ml-1">
-                                <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
-                            </svg>
-                        </span>
-                    </div>
-                </a>
-                {% endfor %}
+            <div class="relative lg:static">
+                <button 
+                    id="catScrollLeft"
+                    class="flex lg:hidden absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur rounded-full shadow-xl items-center justify-center hover:bg-white dark:hover:bg-gray-700 transition-all active:scale-90"
+                    aria-label="Previous">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700 dark:text-gray-200" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <button 
+                    id="catScrollRight"
+                    class="flex lg:hidden absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur rounded-full shadow-xl items-center justify-center hover:bg-white dark:hover:bg-gray-700 transition-all active:scale-90"
+                    aria-label="Next">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-700 dark:text-gray-200" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+
+                <div 
+                    id="catCarousel" 
+                    class="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide lg:grid lg:grid-cols-4 lg:overflow-visible lg:snap-none">
+                    {% for cat in categories %}
+                    <a href="{% url 'home' %}?category={{ cat.slug }}"
+                       data-category-slug="{{ cat.slug }}"
+                       data-category-name="{{ cat.name }}"
+                       class="category-tile group relative flex-shrink-0 w-56 sm:w-64 lg:w-full h-56 sm:h-64 rounded-2xl overflow-hidden shadow-lg hover:shadow-[0_0_40px_rgba(124,58,237,0.3)] transition-all duration-500 transform hover:-translate-y-2 focus:outline-none hover:ring-2 hover:ring-lux-400/50 snap-start"
+                       style="background-image: url('{% if cat.first_product_image %}{{ cat.first_product_image }}{% else %}{% static 'images/placeholder.jpg' %}{% endif %}'); background-size: cover; background-position: center;"
+                    >
+                        <!-- Glass overlay at the bottom -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent transition-opacity duration-500 group-hover:opacity-80"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 backdrop-blur-md bg-white/10 border-t border-white/20 text-white text-left">
+                            <h3 class="font-display text-lg sm:text-xl font-bold drop-shadow-lg mb-1">{{ cat.name }}</h3>
+                            {% if cat.description %}
+                                <p class="text-xs sm:text-sm text-white/80 line-clamp-2 drop-shadow">{{ cat.description }}</p>
+                            {% endif %}
+                            <span class="mt-2 inline-flex items-center text-xs font-semibold text-lux-300 group-hover:translate-x-1 transition-transform duration-300">
+                                Explore
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 ml-1">
+                                    <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                                </svg>
+                            </span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </section>
+
+    <!-- Hide scrollbar -->
+    <style>
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const carousel = document.getElementById('catCarousel');
+            const leftBtn = document.getElementById('catScrollLeft');
+            const rightBtn = document.getElementById('catScrollRight');
+            if (!carousel || !leftBtn || !rightBtn) return;
+            const scrollStep = 280;
+            leftBtn.addEventListener('click', () => carousel.scrollBy({ left: -scrollStep, behavior: 'smooth' }));
+            rightBtn.addEventListener('click', () => carousel.scrollBy({ left: scrollStep, behavior: 'smooth' }));
+        });
+    </script>
     {% endif %}
 
-    <!-- Product Area (Active Category + AJAX Grid) -->
+    <!-- Product Area -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <!-- Category Details Header -->
         <div id="category-header" class="mb-12 border-l-4 border-lux-600 pl-6 py-2 {% if not active_category %}hidden{% endif %}">
             <div class="flex items-center gap-3 text-lux-600 mb-2">
                 <i id="header-icon" class="bi bi-grid-fill text-2xl"></i>
@@ -125,7 +212,8 @@
         </div>
 
         <div class="reveal delay-100 min-h-[400px] relative" id="product-grid-container">
-            <div id="loading-spinner" class="hidden absolute inset-0 z-30 flex items-center justify-center bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-3xl">
+            <!-- Glass loading overlay -->
+            <div id="loading-spinner" class="hidden absolute inset-0 z-30 flex items-center justify-center bg-white/40 dark:bg-gray-900/40 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-3xl">
                 <div class="flex flex-col items-center gap-3">
                     <div class="w-12 h-12 border-4 border-slate-200 border-t-lux-600 dark:border-slate-800 dark:border-t-lux-500 rounded-full animate-spin"></div>
                     <p class="text-slate-600 dark:text-slate-400 font-medium text-sm animate-pulse tracking-wide">Loading Luxury...</p>
@@ -146,66 +234,67 @@
     </div>
 </div>
 
-    <!-- Quick View Modal -->
-    <div id="quickViewModal" class="fixed inset-0 z-[100] hidden overflow-y-auto" role="dialog" aria-modal="true">
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick="closeQuickView()"></div>
-            <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-gray-100 dark:border-gray-700 animate-in">
-                <button onclick="closeQuickView()"
-                        class="absolute top-4 right-4 z-50 p-2 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-                <div class="grid grid-cols-1 md:grid-cols-2">
-                    <div class="bg-gray-100 dark:bg-gray-900 h-96 md:h-full">
-                        <img id="qv-image" src="" class="w-full h-full object-cover" alt="">
+<!-- Quick View Modal – full glassmorphism design -->
+<div id="quickViewModal" class="fixed inset-0 z-[100] hidden overflow-y-auto" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Blurred overlay -->
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity" aria-hidden="true" onclick="closeQuickView()"></div>
+        <!-- Glass modal panel -->
+        <div class="inline-block align-bottom backdrop-blur-2xl bg-white/80 dark:bg-gray-800/80 border border-white/30 dark:border-white/10 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full animate-in">
+            <button onclick="closeQuickView()"
+                    class="absolute top-4 right-4 z-50 p-2 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div class="grid grid-cols-1 md:grid-cols-2">
+                <div class="bg-gray-100 dark:bg-gray-900 h-96 md:h-full">
+                    <img id="qv-image" src="" class="w-full h-full object-cover" alt="">
+                </div>
+                <div class="p-8">
+                    <p id="qv-category" class="text-lux-600 font-medium text-sm"></p>
+                    <h2 id="qv-name" class="font-display text-3xl font-bold text-gray-900 dark:text-white mt-2"></h2>
+                    <div class="flex items-center gap-1.5 mt-2 text-amber-400 text-xs">
+                        <i class="bi bi-star-fill"></i>
+                        <span id="qv-review-count" class="text-gray-500"></span>
                     </div>
-                    <div class="p-8">
-                        <p id="qv-category" class="text-lux-600 font-medium text-sm"></p>
-                        <h2 id="qv-name" class="font-display text-3xl font-bold text-gray-900 dark:text-white mt-2"></h2>
-                        <div class="flex items-center gap-1.5 mt-2 text-amber-400 text-xs">
-                            <i class="bi bi-star-fill"></i>
-                            <span id="qv-review-count" class="text-gray-500"></span>
+                    <div class="flex items-baseline gap-3 mt-4">
+                        <span id="qv-effective-price" class="text-3xl font-bold text-lux-600"></span>
+                        <span id="qv-original-price" class="text-lg text-gray-400 line-through hidden"></span>
+                    </div>
+                    <div class="mt-6">
+                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Description</h3>
+                        <p id="qv-description" class="text-gray-600 dark:text-gray-400 mt-2 text-sm leading-relaxed line-clamp-4"></p>
+                    </div>
+                    <div class="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700 flex items-center gap-4">
+                        <div class="flex items-center border border-gray-300 dark:border-gray-600 rounded-full">
+                            <button class="px-3 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-l-full" onclick="changeQVQty(-1)">−</button>
+                            <input id="qv-qtyInput" type="text" value="1"
+                                   class="w-10 text-center font-semibold focus:outline-none dark:bg-transparent dark:text-white text-sm" readonly>
+                            <button class="px-3 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-r-full" onclick="changeQVQty(1)">+</button>
                         </div>
-                        <div class="flex items-baseline gap-3 mt-4">
-                            <span id="qv-effective-price" class="text-3xl font-bold text-lux-600"></span>
-                            <span id="qv-original-price" class="text-lg text-gray-400 line-through hidden"></span>
-                        </div>
-                        <div class="mt-6">
-                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Description</h3>
-                            <p id="qv-description" class="text-gray-600 dark:text-gray-400 mt-2 text-sm leading-relaxed line-clamp-4"></p>
-                        </div>
-                        <div class="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700 flex items-center gap-4">
-                            <div class="flex items-center border border-gray-300 dark:border-gray-600 rounded-full">
-                                <button class="px-3 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-l-full" onclick="changeQVQty(-1)">−</button>
-                                <input id="qv-qtyInput" type="text" value="1"
-                                       class="w-10 text-center font-semibold focus:outline-none dark:bg-transparent dark:text-white text-sm" readonly>
-                                <button class="px-3 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-r-full" onclick="changeQVQty(1)">+</button>
-                            </div>
-                            <button id="qv-add-btn"
-                                    class="flex-1 bg-lux-600 hover:bg-lux-700 text-white py-3 rounded-xl font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                                </svg>
-                                Add to Cart
-                            </button>
-                        </div>
-                        <div class="mt-4">
-                            <a id="qv-details-link" href=""
-                               class="text-sm font-semibold text-lux-600 hover:text-lux-700 transition-colors inline-flex items-center gap-1">
-                                Full Details
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                </svg>
-                            </a>
-                        </div>
+                        <button id="qv-add-btn"
+                                class="flex-1 bg-lux-600 hover:bg-lux-700 text-white py-3 rounded-xl font-medium transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                            </svg>
+                            Add to Cart
+                        </button>
+                    </div>
+                    <div class="mt-4">
+                        <a id="qv-details-link" href=""
+                           class="text-sm font-semibold text-lux-600 hover:text-lux-700 transition-colors inline-flex items-center gap-1">
+                            Full Details
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                            </svg>
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
+</div>
 {% endif %}
 <!-- END AUTHENTICATED SECTION -->
 
@@ -266,7 +355,81 @@
     })();
 
     // ===========================
-    // CATEGORY AJAX (for authenticated users)
+    // ADS CAROUSEL
+    // ===========================
+    (function() {
+        const track = document.getElementById('ads-track');
+        const progressContainer = document.getElementById('ads-progress');
+        if (!track) return;
+        
+        let index = 0;
+        const slides = track.children.length;
+        let autoSlideInterval;
+        const slideDuration = 6000; // 6 seconds
+
+        // Initialize progress indicators
+        if (progressContainer) {
+            for (let i = 0; i < slides; i++) {
+                const bar = document.createElement('div');
+                // Active bar is wider and colored
+                bar.className = `h-1.5 rounded-full transition-all duration-500 ${i === 0 ? 'w-10 bg-lux-600' : 'w-4 bg-slate-300 dark:bg-slate-700 cursor-pointer'}`;
+                bar.addEventListener('click', () => {
+                    index = i;
+                    updateAds();
+                    resetAutoSlide();
+                });
+                progressContainer.appendChild(bar);
+            }
+        }
+
+        window.nextAd = function() {
+            index = (index + 1) % slides;
+            updateAds();
+            resetAutoSlide();
+        };
+
+        window.prevAd = function() {
+            index = (index - 1 + slides) % slides;
+            updateAds();
+            resetAutoSlide();
+        };
+
+        function updateAds() {
+            track.style.transform = `translateX(-${index * 100}%)`;
+
+            if (progressContainer) {
+                const bars = progressContainer.children;
+                for (let i = 0; i < bars.length; i++) {
+                    const isActive = i === index;
+                    bars[i].className = `h-1.5 rounded-full transition-all duration-500 ${isActive ? 'w-10 bg-lux-600' : 'w-4 bg-slate-300 dark:bg-slate-700'}`;
+                }
+            }
+        }
+
+        function startAutoSlide() {
+            if (slides > 1) {
+                autoSlideInterval = setInterval(() => {
+                    index = (index + 1) % slides;
+                    updateAds();
+                }, slideDuration);
+            }
+        }
+
+        function stopAutoSlide() {
+            clearInterval(autoSlideInterval);
+        }
+
+        function resetAutoSlide() {
+            stopAutoSlide();
+            startAutoSlide();
+        }
+
+        startAutoSlide(); // Start auto-play on load
+        track.parentElement.addEventListener('mouseenter', stopAutoSlide);
+        track.parentElement.addEventListener('mouseleave', startAutoSlide);
+    })();
+    // ===========================
+    // CATEGORY AJAX
     // ===========================
     {% if user.is_authenticated %}
     const categoryTiles = document.querySelectorAll('.category-tile');

@@ -1,6 +1,16 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}Login - LuxMarket{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Global soft transitions for a premium, fluid feel */
+    * {
+        transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="min-h-screen flex items-center justify-center py-20 px-4 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-black">
     <div class="max-w-md w-full bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden reveal">

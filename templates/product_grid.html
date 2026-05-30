@@ -1,5 +1,5 @@
 {% if products %}
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
         {% for product in products %}
             <div class="group bg-white dark:bg-gray-800 rounded-2xl shadow-lux overflow-hidden hover:shadow-[0_0_35px_rgba(124,58,237,0.15)] hover:scale-[1.02] transition-all duration-500 reveal" id="product-card-{{ product.id }}">
                 <div class="relative h-56 overflow-hidden">
@@ -23,10 +23,12 @@
                                 data-product-uuid="{{ product.uuid }}" title="Quick View">
                             <i class="bi bi-eye text-lg"></i>
                         </button>
-                        <button class="wishlist-btn p-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-full shadow-xl hover:bg-red-500 hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-300 delay-75" 
+                        {% if not user.is_authenticated or user.role == 'CUSTOMER' %}
+                        <button class="wishlist-btn p-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-full shadow-xl hover:bg-red-500 hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-300 delay-75 active:scale-90" 
                                 data-product-id="{{ product.id }}" title="Toggle Wishlist">
                             <i class="bi {% if product.id in favorite_ids %}bi-heart-fill text-red-500{% else %}bi-heart{% endif %} text-lg"></i>
                         </button>
+                        {% endif %}
                     </div>
                     <a href="{% url 'product_detail' product.uuid %}" class="absolute inset-0 z-0" aria-label="View {{ product.name }} details"></a>
                 </div>
@@ -67,3 +69,32 @@
         <p class="text-gray-500 dark:text-gray-400 max-w-xs mx-auto text-sm leading-relaxed">We couldn't find any products matching your current criteria. Try selecting a different category or clearing your search filters.</p>
     </div>
 {% endif %}
+
+<script>
+       document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.wishlist-btn');
+        if (!btn) return;
+        e.preventDefault();
+        const productId = btn.dataset.productId;
+        if (!productId) return;
+
+        try {
+            const res = await ajaxPost(`/favorites/toggle/${productId}/`, {});
+            if (res.success) {
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    if (res.is_favorite) {
+                        icon.classList.remove('bi-heart');
+                        icon.classList.add('bi-heart-fill', 'text-red-500');
+                    } else {
+                        icon.classList.remove('bi-heart-fill', 'text-red-500');
+                        icon.classList.add('bi-heart');
+                    }
+                }
+                showToast(res.message || (res.is_favorite ? 'Added to favourites' : 'Removed from favourites'));
+            }
+        } catch (err) {
+            showToast('Could not update favourite', 'error');
+        }
+    });
+</script>

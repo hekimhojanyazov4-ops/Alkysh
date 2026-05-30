@@ -28,6 +28,10 @@
         </form>
     </div>
 
+    <!-- ========== GLOBAL “SELECT ALL” BUTTON (new) ========== -->
+   
+    <!-- ================================================= -->
+
     <div class="space-y-12">
         <!-- Pending Sellers -->
         <section>
@@ -263,15 +267,56 @@
 
 {% block extra_js %}
 <script>
-    /**
-     * Initializes bulk selection functionality.
-     * @param {Object} config
-     * @param {string} config.selectAllId - ID of the "select all" checkbox
-     * @param {string} config.checkboxClass - Class of individual item checkboxes
-     * @param {string} config.toolbarId - ID of the bulk action toolbar
-     * @param {string} config.countId - ID of the element showing selected count
-     * @param {string} config.formId - ID of the bulk action form (optional, for reset on submit)
-     */
+    // ~~~~~~~~~~~~~ Global “Select All Sellers” button ~~~~~~~~~~~~~
+    const globalSelectBtn = document.getElementById('global-select-all-btn');
+
+    if (globalSelectBtn) {
+        let allSelected = false;
+
+        function updateGlobalButtonState() {
+            const allCheckboxes = document.querySelectorAll('.pending-checkbox, .approved-checkbox');
+            const checkedCount = document.querySelectorAll('.pending-checkbox:checked, .approved-checkbox:checked').length;
+            const total = allCheckboxes.length;
+
+            if (total === 0) {
+                globalSelectBtn.querySelector('i').className = 'bi bi-check2-square text-lg';
+                globalSelectBtn.querySelector('span').textContent = 'Select All Sellers';
+                allSelected = false;
+                return;
+            }
+
+            if (checkedCount === total) {
+                globalSelectBtn.querySelector('i').className = 'bi bi-check2-square text-lg text-lux-600';
+                globalSelectBtn.querySelector('span').textContent = 'Deselect All';
+                allSelected = true;
+            } else {
+                globalSelectBtn.querySelector('i').className = 'bi bi-check2-square text-lg';
+                globalSelectBtn.querySelector('span').textContent = 'Select All Sellers';
+                allSelected = false;
+            }
+        }
+
+        globalSelectBtn.addEventListener('click', () => {
+            const allCheckboxes = document.querySelectorAll('.pending-checkbox, .approved-checkbox');
+            const newState = !allSelected;
+            allCheckboxes.forEach(cb => { cb.checked = newState; });
+            allSelected = newState;
+            // Trigger change events so per‑table bulk toolbars update
+            document.querySelectorAll('.pending-checkbox').forEach(cb => cb.dispatchEvent(new Event('change')));
+            document.querySelectorAll('.approved-checkbox').forEach(cb => cb.dispatchEvent(new Event('change')));
+            updateGlobalButtonState();
+        });
+
+        document.addEventListener('change', (e) => {
+            if (e.target.matches('.pending-checkbox, .approved-checkbox, #pending-select-all, #approved-select-all')) {
+                updateGlobalButtonState();
+            }
+        });
+
+        updateGlobalButtonState();
+    }
+
+    // ~~~~~~~~~~~~~ Per‑table bulk selection logic ~~~~~~~~~~~~~
     function initBulkActions({ selectAllId, checkboxClass, toolbarId, countId, formId }) {
         const selectAll = document.getElementById(selectAllId);
         const checkboxes = document.querySelectorAll(`.${checkboxClass}`);
@@ -284,24 +329,20 @@
             const count = checked.length;
             const allChecked = checkboxes.length > 0 && count === checkboxes.length;
 
-            // Update select-all checkbox
             if (selectAll) {
                 selectAll.checked = allChecked;
                 selectAll.indeterminate = count > 0 && !allChecked;
             }
 
-            // Show/hide toolbar
             if (toolbar) {
                 toolbar.classList.toggle('hidden', count === 0);
             }
 
-            // Update count text
             if (countDisplay) {
                 countDisplay.textContent = `${count} selected`;
             }
         }
 
-        // "Select All" checkbox handler
         if (selectAll) {
             selectAll.addEventListener('change', function () {
                 const isChecked = this.checked;
@@ -310,12 +351,10 @@
             });
         }
 
-        // Individual checkbox handlers
         checkboxes.forEach(cb => {
             cb.addEventListener('change', updateUI);
         });
 
-        // Reset after form submit (to avoid stale state)
         if (form) {
             form.addEventListener('submit', function () {
                 setTimeout(() => {
@@ -326,7 +365,6 @@
             });
         }
 
-        // Initial state
         updateUI();
     }
 
