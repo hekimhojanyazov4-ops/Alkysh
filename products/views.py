@@ -37,6 +37,7 @@ from .models import (
     Favorite,
     Payment,
     Review,
+    Message,
 )
 
 User = get_user_model()
@@ -591,6 +592,9 @@ def product_detail(request, uuid):
     effective_price = product.discount_price or product.price
     savings = product.price - product.discount_price if product.discount_price else 0
     reviews = product.reviews.select_related('user').all()
+    
+    seller_online = cache.get(f"online_{product.seller.id}", False)
+
     avg_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
     review_form = ReviewForm()
 
@@ -636,6 +640,7 @@ def product_detail(request, uuid):
         'is_favorite': is_favorite,
         'reviews': reviews,
         'avg_rating': avg_rating,
+        'seller_online': seller_online,
         'review_form': review_form,
     }
     return render(request, 'product_detail.html', context)
@@ -1576,3 +1581,160 @@ def wishlist_bulk_remove(request):
         return JsonResponse({'success': True, 'deleted_count': deleted})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+def get_chat_contacts(user):
+    """Internal helper to fetch users with active conversations and their unread counts."""
+    # Find all users who have sent a message to or received a message from the current user
+    involved_ids = Message.objects.filter(
+        Q(sender=user) | Q(receiver=user)
+    ).values_list('sender_id', 'receiver_id')
+    
+    # Flatten and deduplicate IDs, removing the current user
+    flat_ids = set()
+    for s_id, r_id in involved_ids:
+        flat_ids.update([s_id, r_id])
+    flat_ids.discard(user.id)
+    
+    return User.objects.filter(id__in=flat_ids).annotate(
+        unread_count=Count('received_messages', filter=Q(received_messages__receiver=user, received_messages__is_read=False))
+    )
+
+@login_required
+def chat_list(request):
+    # Mark current user as online
+    cache.set(f"online_{request.user.id}", True, 15)
+    users = get_chat_contacts(request.user)
+    return render(request, 'chat.html', {'users': users, 'active_user': None})
+
+@login_required
+def chat_detail(request, user_id):
+    # Mark current user as online
+    cache.set(f"online_{request.user.id}", True, 15)
+    other_user = get_object_or_404(User, id=user_id)
+    chat_messages = Message.objects.filter(
+        (Q(sender=request.user) & Q(receiver=other_user)) |
+        (Q(sender=other_user) & Q(receiver=request.user))
+    ).order_by('timestamp')
+    
+    # Mark as read
+    chat_messages.filter(receiver=request.user, is_read=False).update(is_read=True)
+    
+    users = get_chat_contacts(request.user)
+    if other_user not in users:
+        other_user.unread_count = 0
+        users = list(users) + [other_user]
+
+    return render(request, 'chat.html', {'users': users, 'active_user': other_user, 'chat_messages': chat_messages})
+
+@login_required
+@require_POST
+def api_set_typing(request):
+    try:
+        data = json.loads(request.body)
+        receiver_id = data.get('receiver_id')
+        if receiver_id:
+            # Mark current user as typing to receiver for the next 5 seconds
+            cache.set(f"typing_{request.user.id}_{receiver_id}", True, 5)
+        return JsonResponse({'success': True})
+    except Exception:
+        return JsonResponse({'success': False}, status=400)
+
+@login_required
+@require_POST
+def api_send_message(request):
+    try:
+        # Handle both text and files via POST/FILES
+        receiver_id = request.POST.get('receiver_id')
+        content = request.POST.get('content', '')
+        file = request.FILES.get('file')
+        
+        receiver = get_object_or_404(User, id=receiver_id)
+        msg = Message.objects.create(sender=request.user, receiver=receiver, content=content, file=file)
+        
+        return JsonResponse({
+            'success': True, 
+            'id': msg.id,
+            'content': msg.content, 
+            'timestamp': msg.timestamp.strftime('%H:%M'),
+            'file_url': msg.file.url if msg.file else None,
+            'file_name': os.path.basename(msg.file.name) if msg.file else None
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@login_required
+@require_POST
+def api_delete_message(request):
+    try:
+        data = json.loads(request.body)
+        msg_id = data.get('message_id')
+        # Security check: only the sender is permitted to delete the message
+        msg = get_object_or_404(Message, id=msg_id, sender=request.user)
+        msg.delete()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@login_required
+def api_get_messages(request, user_id):
+    # Heartbeat: Mark current user as online for 15 seconds
+    cache.set(f"online_{request.user.id}", True, 15)
+    
+    # 1. Cast last_id to integer to ensure correct numeric comparison in DB
+    try:
+        last_id = int(request.GET.get('last_id', 0))
+    except (ValueError, TypeError):
+        last_id = 0
+
+    new_msgs = Message.objects.filter(
+        sender_id=user_id,
+        receiver=request.user,
+        id__gt=last_id
+    ).order_by('timestamp')
+    
+    # Check if the other user is currently typing to the requester
+    is_typing = cache.get(f"typing_{user_id}_{request.user.id}", False)
+
+    # 2. Optimized contact retrieval: Single query to find all involved user IDs
+    involved_pairs = Message.objects.filter(
+        Q(sender=request.user) | Q(receiver=request.user)
+    ).values_list('sender_id', 'receiver_id')
+    
+    unique_ids = set()
+    for s_id, r_id in involved_pairs:
+        unique_ids.update([s_id, r_id])
+    unique_ids.discard(request.user.id)
+    
+    # Check online status for all involved users
+    online_users = [uid for uid in unique_ids if cache.get(f"online_{uid}")]
+    
+    # Get unread counts for all contacts to update sidebar
+    unread_counts = Message.objects.filter(receiver=request.user, is_read=False).values('sender').annotate(count=Count('id'))
+    unread_map = {str(item['sender']): item['count'] for item in unread_counts}
+
+    # 3. Construct data list BEFORE updating is_read to ensure QuerySet consistency
+    data = []
+    for m in new_msgs:
+        data.append({
+            'id': m.id, 'content': m.content, 'timestamp': m.timestamp.strftime('%H:%M'),
+            'file_url': m.file.url if m.file else None,
+            'file_name': os.path.basename(m.file.name) if m.file else None
+        })
+    
+    # 4. Bulk update messages as read
+    new_msgs.update(is_read=True)
+
+    # 5. Get IDs of messages sent by the requester that the other user has read
+    read_ids = list(Message.objects.filter(
+        sender=request.user,
+        receiver_id=user_id,
+        is_read=True
+    ).values_list('id', flat=True))
+
+    return JsonResponse({
+        'messages': data, 
+        'is_typing': is_typing,
+        'online_users': online_users,
+        'unread_map': unread_map,
+        'read_ids': read_ids
+    })

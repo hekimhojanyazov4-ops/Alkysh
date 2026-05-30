@@ -169,6 +169,9 @@
                                     class="p-3 rounded-full border {% if is_favorite %}bg-red-50 border-red-200 text-red-500{% else %}border-slate-200 text-slate-400{% endif %} active:text-slate-900 dark:active:text-white hover:scale-110 transition-all shadow-md">
                                 <i class="bi {% if is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %} text-2xl"></i>
                             </button>
+                            <a href="{% url 'chat_detail' product.seller.id %}" class="p-3 rounded-full border border-slate-200 text-slate-400 hover:scale-110 hover:text-lux-600 hover:border-lux-600 transition-all shadow-md" title="Message Seller">
+                                <i class="bi bi-chat-left-dots text-2xl"></i>
+                            </a>
                         {% else %}
                             <p class="text-sm text-slate-500 italic">Admin view – actions hidden</p>
                         {% endif %}
@@ -178,7 +181,25 @@
                 {% endif %}
             </div>
             {% if user.role != 'ADMIN' %}
-            <div class="mt-4 text-sm text-slate-500 dark:text-slate-400">Sold by <span class="font-medium text-slate-700 dark:text-slate-300">{{ product.seller.fullname }}</span></div>
+            <div class="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <span>Sold by</span>
+                <span class="font-medium text-slate-700 dark:text-slate-300">{{ product.seller.fullname }}</span>
+                <span class="flex items-center gap-1.5 ml-1">
+                    {% if seller_online %}
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        <span class="text-[10px] font-bold text-green-600 uppercase tracking-tight">Online</span>
+                    {% elif product.seller.last_seen %}
+                        <span class="text-[10px] text-slate-400 italic">Last seen {{ product.seller.last_seen|timesince }} ago</span>
+                    {% endif %}
+                </span>
+                {% if user.is_authenticated and user != product.seller %}
+                <span class="text-slate-300 dark:text-slate-700">|</span>
+                <a href="{% url 'chat_detail' product.seller.id %}" class="text-lux-600 hover:text-lux-700 font-bold flex items-center gap-1.5 transition-colors">
+                    <i class="bi bi-chat-left-text"></i>
+                    Contact Seller
+                </a>
+                {% endif %}
+            </div>
             {% endif %}
         </div>
     </div>

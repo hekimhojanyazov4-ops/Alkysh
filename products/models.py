@@ -19,22 +19,6 @@ def validate_file_size(value):
     if value.size > limit:
         raise ValidationError('File too large. Size should not exceed 5 MiB.')
 
-import uuid
-from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.core.validators import FileExtensionValidator
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from django.urls import reverse
-from django.conf import settings
-
-# Предполагается, что ваш кастомный валидатор импортируется или написан выше
-# from .validators import validate_file_size 
-def validate_file_size(value):
-    pass # Замените на ваш реальный валидатор, если он находится в этом же файле
-
-
 class UserManager(BaseUserManager):
     def create_user(self, email, fullname, password=None, **extra_fields):
         if not email:
@@ -89,6 +73,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ]
     )
     is_staff = models.BooleanField(default=False)
+    last_seen = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['fullname']
@@ -372,3 +357,21 @@ class Favorite(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['user', 'product'], name='unique_user_favorite')
         ]
+
+class Message(models.Model):
+    sender = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='sent_messages'
+    )
+    receiver = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='received_messages'
+    )
+    content = models.TextField(blank=True)
+    file = models.FileField(upload_to='chat_files/', blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"From {self.sender} to {self.receiver} at {self.timestamp}"

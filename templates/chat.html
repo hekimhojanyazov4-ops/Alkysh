@@ -1,0 +1,536 @@
+{% extends 'base.html' %}
+{% block title %}Messages - Alkyş{% endblock %}
+
+{% block extra_head %}
+<style>
+    .lux-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: transparent transparent;
+    }
+
+    .lux-scrollbar:hover {
+        scrollbar-color: #a78bfa transparent;
+    }
+
+    .lux-scrollbar::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .lux-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .lux-scrollbar::-webkit-scrollbar-thumb {
+        background-color: transparent;
+        border-radius: 10px;
+    }
+
+    .lux-scrollbar:hover::-webkit-scrollbar-thumb {
+        background-color: #a78bfa;
+    }
+
+    @keyframes message-in {
+        from { opacity: 0; transform: translateY(12px) scale(0.97); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .animate-message {
+        animation: message-in 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    }
+
+    .recording-active {
+        color: #ef4444 !important;
+        animation: pulse-red 1.5s infinite;
+    }
+    @keyframes pulse-red {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+
+    /* Camera Filters */
+    .f-none { filter: none; }
+    .f-grayscale { filter: grayscale(1); }
+    .f-sepia { filter: sepia(1); }
+    .f-invert { filter: invert(1); }
+    .f-warm { filter: sepia(0.4) saturate(1.4); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-12">
+    <div class="flex h-[70vh] bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 reveal">
+        <!-- Sidebar: Conversations -->
+        <div class="w-1/3 border-r border-gray-100 dark:border-gray-700 flex flex-col">
+            <div class="p-6 border-b border-gray-100 dark:border-gray-700">
+                <h2 class="font-display text-2xl font-bold dark:text-white">Messages</h2>
+            </div>
+            <div class="flex-1 overflow-y-auto lux-scrollbar">
+                {% for u in users %}
+                <a href="{% url 'chat_detail' u.id %}" class="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors {% if active_user.id == u.id %}bg-lux-50 dark:bg-lux-900/20 border-r-4 border-lux-600{% endif %}" data-user-id="{{ u.id }}">
+                    <div class="relative">
+                        <div class="w-12 h-12 rounded-full bg-lux-gradient flex items-center justify-center text-white font-bold">{{ u.fullname|first|upper }}</div>
+                        <span class="status-dot absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 bg-gray-300 transition-colors duration-500" id="status-{{ u.id }}"></span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-bold text-gray-900 dark:text-white truncate">{{ u.fullname }}</p>
+                        <p class="text-xs text-gray-500 truncate">{{ u.role|title }}</p>
+                    </div>
+                    <span id="unread-{{ u.id }}" class="unread-badge ml-auto bg-lux-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full {% if not u.unread_count %}hidden{% endif %}">
+                        {{ u.unread_count }}
+                    </span>
+                </a>
+                {% empty %}
+                <p class="p-6 text-gray-400 italic text-sm">No conversations yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="flex-1 flex flex-col bg-gray-50/50 dark:bg-gray-900/20">
+            {% if active_user %}
+            <div class="p-4 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center gap-3">
+                <div class="relative">
+                    <div class="w-10 h-10 rounded-full bg-lux-gradient flex items-center justify-center text-white font-bold text-sm">{{ active_user.fullname|first|upper }}</div>
+                    <span class="status-dot absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-800 bg-gray-300 transition-colors duration-500" id="status-active"></span>
+                </div>
+                <h3 class="font-bold dark:text-white">{{ active_user.fullname }}</h3>
+            </div>
+            
+            <div id="chat-window" class="flex-1 overflow-y-auto p-6 space-y-4 lux-scrollbar">
+                {% for msg in chat_messages %}
+                <div class="group flex {% if msg.sender == request.user %}justify-end{% endif %}" id="msg-container-{{ msg.id }}">
+                    {% if msg.sender == request.user %}
+                    <button onclick="deleteMessage({{ msg.id }})" 
+                            class="mr-2 self-center opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500" 
+                            title="Delete message">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    {% endif %}
+                    <div class="max-w-[70%] rounded-2xl px-4 py-2 shadow-sm text-sm {% if msg.sender == request.user %}bg-lux-600 text-white rounded-tr-none{% else %}bg-white dark:bg-gray-700 dark:text-white rounded-tl-none border border-gray-100 dark:border-gray-600{% endif %}" data-msg-id="{{ msg.id }}">
+                        {% if msg.file %}
+                            {% with ext=msg.file.name|lower %}
+                                {% if '.jpg' in ext or '.jpeg' in ext or '.png' in ext or '.gif' in ext %}
+                                    <a href="{{ msg.file.url }}" target="_blank" class="block mb-2">
+                                        <img src="{{ msg.file.url }}" class="max-w-full rounded-lg shadow-sm max-h-48 object-cover">
+                                    </a>
+                                {% else %}
+                                    <a href="{{ msg.file.url }}" target="_blank" class="flex items-center gap-2 mb-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg text-xs font-medium">
+                                        <i class="bi bi-file-earmark-arrow-down text-lg"></i>
+                                        <span class="truncate max-w-[150px]">Attachment</span>
+                                    </a>
+                                {% endif %}
+                            {% endwith %}
+                        {% elif msg.file and msg.file.name|lower|slice:"-4:" == ".webm" or ".mp3" in msg.file.name|lower or ".ogg" in msg.file.name|lower %}
+                            <audio controls class="w-full max-w-[240px] h-8 mt-1 mb-2">
+                                <source src="{{ msg.file.url }}" type="audio/webm">
+                            </audio>
+                        {% endif %}
+                        {% if msg.content %}<p>{{ msg.content }}</p>{% endif %}
+                        <p class="text-[10px] opacity-70 mt-1 text-right">
+                            {{ msg.timestamp|date:"H:i" }}
+                            {% if msg.sender == request.user %}
+                                <i class="bi {% if msg.is_read %}bi-check2-all text-blue-400{% else %}bi-check2{% endif %} seen-status" id="seen-{{ msg.id }}"></i>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Typing Indicator -->
+            <div id="typing-indicator" class="px-6 py-2 hidden">
+                <div class="flex items-center gap-2 text-xs text-slate-400 italic">
+                    <span class="flex gap-1">
+                        <span class="w-1 h-1 bg-slate-400 rounded-full animate-bounce"></span>
+                        <span class="w-1 h-1 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span class="w-1 h-1 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    </span>
+                    <span>{{ active_user.fullname }} is typing...</span>
+                </div>
+            </div>
+
+            <div class="p-6 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
+                <form id="chat-form" class="flex gap-4 items-center">
+                    <label class="cursor-pointer text-slate-400 hover:text-lux-600 transition-colors" title="Attach file">
+                        <i class="bi bi-paperclip text-2xl"></i>
+                        <input type="file" id="chat-file" class="hidden">
+                    </label>
+                    <button type="button" id="mic-btn" class="text-slate-400 hover:text-red-500 transition-all" title="Record Voice">
+                        <i class="bi bi-mic text-2xl"></i>
+                    </button>
+                    <button type="button" id="cam-btn" class="text-slate-400 hover:text-lux-600 transition-all" title="Take Photo">
+                        <i class="bi bi-camera text-2xl"></i>
+                    </button>
+                    <span id="mic-timer" class="hidden text-xs font-mono text-red-500 animate-pulse">00:00</span>
+                    <input type="text" id="chat-input" placeholder="Type your message..." class="flex-1 px-5 py-3 rounded-xl bg-gray-100 dark:bg-gray-900 border-none focus:ring-2 focus:ring-lux-400 dark:text-white outline-none">
+                    <button type="submit" class="bg-lux-600 text-white p-3 rounded-xl hover:bg-lux-700 transition-all shadow-lg active:scale-95">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <div class="flex-1 flex flex-col items-center justify-center text-gray-400">
+                <i class="bi bi-chat-square-text text-6xl mb-4 opacity-20"></i>
+                <p>Select a contact to start luxury conversation</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Camera Modal -->
+<div id="cam-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="stopCamera()"></div>
+    <div class="relative bg-white dark:bg-gray-800 rounded-[2rem] shadow-2xl overflow-hidden max-w-lg w-full reveal animate-in">
+        <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
+            <h3 class="font-display font-bold dark:text-white">Capture Moment</h3>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleCamera()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-lux-50 hover:text-lux-600 transition-colors" title="Switch Camera">
+                    <i class="bi bi-camera-reverse text-lg"></i>
+                </button>
+                <button onclick="stopCamera()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 hover:text-red-500 transition-colors">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+        <div class="relative bg-black aspect-square sm:aspect-video flex flex-col items-center justify-center group/cam">
+            <video id="cam-preview" autoplay playsinline class="w-full h-full object-cover"></video>
+            <canvas id="cam-canvas" class="hidden"></canvas>
+
+            <!-- Filter Controls -->
+            <div class="absolute bottom-4 left-0 right-0 flex justify-center gap-2 overflow-x-auto px-4 pb-2 scrollbar-hide opacity-0 group-hover/cam:opacity-100 transition-opacity">
+                <button onclick="applyCamFilter('none')" class="shrink-0 px-3 py-1 bg-black/40 backdrop-blur-md text-white text-[10px] font-bold uppercase rounded-full border border-white/20 hover:bg-lux-600 transition-colors">Normal</button>
+                <button onclick="applyCamFilter('grayscale')" class="shrink-0 px-3 py-1 bg-black/40 backdrop-blur-md text-white text-[10px] font-bold uppercase rounded-full border border-white/20 hover:bg-lux-600 transition-colors">B&W</button>
+                <button onclick="applyCamFilter('sepia')" class="shrink-0 px-3 py-1 bg-black/40 backdrop-blur-md text-white text-[10px] font-bold uppercase rounded-full border border-white/20 hover:bg-lux-600 transition-colors">Sepia</button>
+                <button onclick="applyCamFilter('warm')" class="shrink-0 px-3 py-1 bg-black/40 backdrop-blur-md text-white text-[10px] font-bold uppercase rounded-full border border-white/20 hover:bg-lux-600 transition-colors">Warm</button>
+                <button onclick="applyCamFilter('invert')" class="shrink-0 px-3 py-1 bg-black/40 backdrop-blur-md text-white text-[10px] font-bold uppercase rounded-full border border-white/20 hover:bg-lux-600 transition-colors">Invert</button>
+            </div>
+        </div>
+        <div class="p-8 flex justify-center bg-gray-50 dark:bg-gray-900/50">
+            <button id="capture-btn" class="w-20 h-20 rounded-full bg-white border-8 border-lux-100 dark:border-lux-900 flex items-center justify-center shadow-2xl active:scale-90 transition-transform">
+                <div class="w-12 h-12 rounded-full bg-lux-600"></div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Sound -->
+<audio id="chat-notification-sound" preload="auto">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    {% if active_user %}
+    (function() {
+        const chatWindow = document.getElementById('chat-window');
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const micBtn = document.getElementById('mic-btn');
+        const camBtn = document.getElementById('cam-btn');
+        const camModal = document.getElementById('cam-modal');
+        const camPreview = document.getElementById('cam-preview');
+        const camCanvas = document.getElementById('cam-canvas');
+        const captureBtn = document.getElementById('capture-btn');
+        const micTimer = document.getElementById('mic-timer');
+        let mediaRecorder;
+        let audioChunks = [];
+        let camStream = null;
+        let currentFacingMode = 'user';
+        let currentFilter = 'none';
+        let startTime;
+        let timerInterval;
+
+        if (!chatWindow) return;
+
+        chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: 'smooth' });
+
+        // Speech Recording Logic
+        micBtn.addEventListener('click', async () => {
+            if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+                    mediaRecorder.onstop = async () => {
+                        clearInterval(timerInterval);
+                        micTimer.classList.add('hidden');
+                        micTimer.textContent = '00:00';
+
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const audioFile = new File([audioBlob], "voice_message.webm", { type: 'audio/webm' });
+                        
+                        const formData = new FormData();
+                        formData.append('receiver_id', '{{ active_user.id }}');
+                        formData.append('file', audioFile);
+
+                        const response = await fetch('{% url "api_send_message" %}', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
+                            body: formData
+                        });
+                        const res = await response.json();
+                        if (res.success) {
+                            appendMessage(res.content, res.timestamp, true, res.file_url, res.file_name, res.id);
+                        }
+                        
+                        // Stop all tracks to release microphone
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    micBtn.classList.add('recording-active');
+
+                    // Start Timer
+                    micTimer.classList.remove('hidden');
+                    startTime = Date.now();
+                    timerInterval = setInterval(() => {
+                        const seconds = Math.floor((Date.now() - startTime) / 1000);
+                        const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                        const secs = (seconds % 60).toString().padStart(2, '0');
+                        micTimer.textContent = `${mins}:${secs}`;
+                    }, 1000);
+
+                    showToast('Recording...', 'info');
+                } catch (err) {
+                    showToast('Microphone access denied', 'error');
+                }
+            } else {
+                mediaRecorder.stop();
+                micBtn.classList.remove('recording-active');
+            }
+        });
+
+        // Camera Logic
+        window.stopCamera = () => {
+            if (camStream) {
+                camStream.getTracks().forEach(track => track.stop());
+            }
+            camModal.classList.add('hidden');
+            camStream = null;
+        };
+
+        camBtn.addEventListener('click', async () => {
+            try {
+                camStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } } 
+                });
+                camPreview.srcObject = camStream;
+                camModal.classList.remove('hidden');
+            } catch (err) {
+                showToast('Camera access denied', 'error');
+            }
+        });
+
+        captureBtn.addEventListener('click', () => {
+            const context = camCanvas.getContext('2d');
+            camCanvas.width = camPreview.videoWidth;
+            camCanvas.height = camPreview.videoHeight;
+            context.drawImage(camPreview, 0, 0, camCanvas.width, camCanvas.height);
+
+            camCanvas.toBlob(async (blob) => {
+                const file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
+                const formData = new FormData();
+                formData.append('receiver_id', '{{ active_user.id }}');
+                formData.append('file', file);
+
+                stopCamera();
+
+                const response = await fetch('{% url "api_send_message" %}', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                });
+                const res = await response.json();
+                if (res.success) {
+                    appendMessage(res.content, res.timestamp, true, res.file_url, res.file_name, res.id);
+                }
+            }, 'image/jpeg', 0.85); // High quality compression
+        });
+
+        window.deleteMessage = async (msgId) => {
+            if (!confirm('Are you sure you want to delete this message?')) return;
+            
+            const res = await ajaxPost('{% url "api_delete_message" %}', {
+                message_id: msgId
+            });
+            
+            if (res.success) {
+                const el = document.getElementById(`msg-container-${msgId}`);
+                if (el) {
+                    el.style.opacity = '0';
+                    el.style.transform = 'scale(0.9)';
+                    setTimeout(() => el.remove(), 300);
+                }
+            }
+        };
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const content = chatInput.value.trim();
+            const fileInput = document.getElementById('chat-file');
+            const file = fileInput.files[0];
+
+            if (!content && !file) return;
+            
+            const formData = new FormData();
+            formData.append('receiver_id', '{{ active_user.id }}');
+            formData.append('content', content);
+            if (file) formData.append('file', file);
+
+            chatInput.value = '';
+            fileInput.value = '';
+
+            const response = await fetch('{% url "api_send_message" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            });
+            const res = await response.json();
+            if (res.success) {
+                appendMessage(res.content, res.timestamp, true, res.file_url, res.file_name, res.id);
+            }
+        });
+
+        // Send typing status when user interacts with input
+        let typingTimeout;
+        chatInput.addEventListener('input', () => {
+            if (!typingTimeout) {
+                ajaxPost('{% url "api_set_typing" %}', { receiver_id: '{{ active_user.id }}' });
+                typingTimeout = setTimeout(() => { typingTimeout = null; }, 3000); // Throttled to every 3s
+            }
+        });
+
+        function appendMessage(content, time, isMine, fileUrl = null, fileName = null, msgId = null) {
+            const container = document.createElement('div');
+            container.id = `msg-container-${msgId}`;
+            container.className = `group flex animate-message ${isMine ? 'justify-end' : ''}`;
+            
+            let contentHtml = '';
+            if (fileUrl) {
+                const name = fileName || fileUrl;
+                const isImage = /\.(jpg|jpeg|png|gif)$/i.test(name);
+                const isAudio = /\.(webm|mp3|ogg|wav|m4a)$/i.test(name);
+                
+                if (isImage) {
+                    contentHtml += `<a href="${fileUrl}" target="_blank" class="block mb-2">
+                        <img src="${fileUrl}" class="max-w-full rounded-lg shadow-sm max-h-48 object-cover">
+                    </a>`;
+                } else if (isAudio) {
+                    contentHtml += `
+                        <div class="waveform-wrapper" data-audio-url="${fileUrl}">
+                            <button type="button" class="play-btn"><i class="bi bi-play-fill"></i></button>
+                            <div class="waveform-container flex-1"></div>
+                        </div>`;
+                } else {
+                    contentHtml += `<a href="${fileUrl}" target="_blank" class="flex items-center gap-2 mb-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg text-xs font-medium">
+                        <i class="bi bi-file-earmark-arrow-down text-lg"></i>
+                        <span class="truncate max-w-[150px]">${fileName || 'Attachment'}</span>
+                    </a>`;
+                }
+            }
+            if (content) contentHtml += `<p>${content}</p>`;
+
+            const seenIcon = isMine ? `<i class="bi bi-check2 seen-status" id="seen-${msgId}"></i>` : '';
+
+            const deleteBtn = isMine ? `
+                <button onclick="deleteMessage(${msgId})" 
+                        class="mr-2 self-center opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500" 
+                        title="Delete message">
+                    <i class="bi bi-trash"></i>
+                </button>` : '';
+
+            const bubbleClass = isMine ? 'bg-lux-600 text-white rounded-tr-none' : 'bg-white dark:bg-gray-700 dark:text-white rounded-tl-none border border-gray-100 dark:border-gray-600';
+            container.innerHTML = `
+                ${isMine ? deleteBtn : ''}
+                <div class="max-w-[70%] rounded-2xl px-4 py-2 shadow-sm text-sm ${bubbleClass}" ${msgId ? `data-msg-id="${msgId}"` : ''}>
+                    ${contentHtml}
+                    <p class="text-[10px] opacity-70 mt-1 text-right">${time} ${seenIcon}</p>
+                </div>
+            `;
+            chatWindow.appendChild(container);
+            chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: 'smooth' });
+            initAllWaveforms();
+        }
+
+        // Real-time Polling
+        setInterval(async () => {
+            const msgElements = chatWindow.querySelectorAll('[data-msg-id]');
+            const lastId = msgElements.length > 0 ? msgElements[msgElements.length - 1].dataset.msgId : 0;
+            const response = await fetch(`{% url "api_get_messages" active_user.id %}?last_id=${lastId}`);
+            const data = await response.json();
+
+            // Play sound if new messages arrived
+            if (data.messages && data.messages.length > 0) {
+                const sound = document.getElementById('chat-notification-sound');
+                sound?.play().catch(err => console.log('Audio playback blocked until user interaction.'));
+            }
+            
+            // Update Typing Indicator
+            const indicator = document.getElementById('typing-indicator');
+            if (data.is_typing) {
+                indicator.classList.remove('hidden');
+            } else {
+                indicator.classList.add('hidden');
+            }
+
+            // Update Online Status for everyone in sidebar
+            document.querySelectorAll('.status-dot').forEach(dot => {
+                dot.classList.remove('bg-green-500');
+                dot.classList.add('bg-gray-300');
+            });
+            
+            data.online_users.forEach(uid => {
+                const dot = document.getElementById(`status-${uid}`);
+                if (dot) {
+                    dot.classList.remove('bg-gray-300');
+                    dot.classList.add('bg-green-500');
+                }
+                // Also update the active header if it's that user
+                if (uid == '{{ active_user.id }}') {
+                    const activeDot = document.getElementById('status-active');
+                    if (activeDot) {
+                        activeDot.classList.remove('bg-gray-300');
+                        activeDot.classList.add('bg-green-500');
+                    }
+                }
+            });
+
+            // Update Unread Counts
+            document.querySelectorAll('.unread-badge').forEach(badge => {
+                const uid = badge.id.replace('unread-', '');
+                const count = data.unread_map[uid] || 0;
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            });
+
+            // Update Seen Status for my sent messages
+            if (data.read_ids) {
+                data.read_ids.forEach(mid => {
+                    const icon = document.getElementById(`seen-${mid}`);
+                    if (icon && icon.classList.contains('bi-check2')) {
+                        icon.classList.replace('bi-check2', 'bi-check2-all');
+                        icon.classList.add('text-blue-400');
+                    }
+                });
+            }
+
+            data.messages.forEach(m => {
+                appendMessage(m.content, m.timestamp, false, m.file_url, m.file_name, m.id);
+                indicator.classList.add('hidden'); // Hide immediately when message arrives
+                // Optionally update lastId logic here for actual DOM data-attributes
+            });
+        }, 3000);
+    })();
+    {% endif %}
+</script>
+{% endblock %}

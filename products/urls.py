@@ -33,6 +33,7 @@ from .views import (
     terms_of_use,
     privacy_policy,
     wishlist_bulk_remove,
+    chat_list, chat_detail, api_send_message, api_set_typing, api_get_messages, api_delete_message,
 )
 
 urlpatterns = [
@@ -119,4 +120,11 @@ urlpatterns = [
 
     # 'admin/' prefiksini 'admin-panel/' edip üýtgetdik:
     path('admin-panel/users/<int:user_id>/reset-password/', admin_reset_password, name='admin_reset_password'), 
+
+    path('messages/', chat_list, name='chat_list'),
+    path('messages/<int:user_id>/', chat_detail, name='chat_detail'),
+    path('api/chat/send/', api_send_message, name='api_send_message'),
+    path('api/chat/typing/', api_set_typing, name='api_set_typing'),
+    path('api/chat/delete/', api_delete_message, name='api_delete_message'),
+    path('api/chat/sync/<int:user_id>/', api_get_messages, name='api_get_messages'),
 ]
